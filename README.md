@@ -81,7 +81,7 @@ _Add screenshots of your dashboard here_
 
 ## 👨‍💻 Author
 
-Your Name - [GitHub](https://github.com/justGiveMeOneThen)
+Your Name - [Simbanai](https://github.com/justGiveMeOneThen)
 
 ## 📄 License
 

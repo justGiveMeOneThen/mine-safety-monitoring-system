@@ -99,29 +99,21 @@ def get_predictions(request):
         }
     })
 
+# get_historical_data
 def get_historical_data(request):
-    """
-    API endpoint for historical data (24 hours)
-    NOTE: Currently generates MOCK DATA
-    In production: Will query database of ESP32 readings
-    """
-    hours = 24
     now = datetime.now()
-    
-    # Generate historical data points
-    historical_data = []
-    for i in range(hours):
-        timestamp = now - timedelta(hours=hours-i)
-        
-        # Simulate realistic patterns
-        base_co = 25 + (i % 6) * 3
-        base_temp = 26 + (i % 4) * 1.5
-        
-        historical_data.append({
-            'timestamp': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-            'carbonMonoxide': round(base_co + random.uniform(-2, 2), 2),
-            'temperature': round(base_temp + random.uniform(-1, 1), 2),
-            'sector': 'Sector 1'
+    historical = []
+
+    # Generate from OLDEST to NEWEST (0h → 23h ago becomes 23h ago → now)
+    for hour in range(24):
+        # Go backwards: 23h ago, 22h ago, ..., now
+        timestamp = now - timedelta(hours=23 - hour)
+        co = round(random.uniform(10, 50), 2)
+        temp = round(random.uniform(20, 36), 2)
+        historical.append({
+            'timestamp': timestamp.isoformat(),
+            'carbonMonoxide': co,
+            'temperature': temp
         })
-    
-    return JsonResponse({'historicalData': historical_data})
+
+    return JsonResponse({'historicalData': historical})  # Note: key must match frontend!
