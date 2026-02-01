@@ -1,5 +1,3 @@
-# monitoring/views.py - COMPLETE VERSION
-
 from django.shortcuts import render
 from django.http import JsonResponse
 from datetime import datetime, timedelta
