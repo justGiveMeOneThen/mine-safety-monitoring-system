@@ -3,10 +3,15 @@ from django.http import JsonResponse
 from datetime import datetime, timedelta
 import random
 from .ml_predictor import predictor
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def dashboard(request):
+    return render(request, 'monitoring/dashboard.html')
 
 def home(request):
     """Redirect to dashboard"""
-    return render(request, 'monitoring/home.html')
+    return render(request, 'registration/login.html')
 
 def dashboard(request):
     """Main dashboard view"""

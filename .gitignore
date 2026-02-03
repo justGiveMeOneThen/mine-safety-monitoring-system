@@ -1,1 +1,11 @@
-mine_safety_project/__pycache__/settings.cpython-314.pyc
+# Python compilation archives
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Database (optional, usually good to ignore local DB)
+db.sqlite3
+
+# Virtual Environment
+venv/
+env/
