@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import random
 from .ml_predictor import predictor
 from django.contrib.auth.decorators import login_required
+from .alerts import alert_system
 
 @login_required
 def dashboard(request):
@@ -50,6 +51,7 @@ def get_sensor_data(request):
 def get_predictions(request):
     """
     API endpoint for AI predictions using risk_model.joblib
+    NOW WITH INTELLIGENT EMAIL ALERTS
     """
     predictions = []
     
@@ -65,7 +67,7 @@ def get_predictions(request):
         time_to_reach = random.randint(10, 40)
         severity = 'critical' if prediction_result['predicted_co'] > 50 else 'warning'
         
-        predictions.append({
+        prediction_data = {
             'id': 'pred-co',
             'sector': 'Sector 1',
             'gasType': 'Carbon Monoxide',
@@ -75,14 +77,21 @@ def get_predictions(request):
             'severity': severity,
             'recommendation': 'Critical CO levels predicted. Evacuate personnel immediately.' if severity == 'critical' else 'Elevated CO detected. Check ventilation system.',
             'timestamp': datetime.now().isoformat()
-        })
+        }
+        
+        predictions.append(prediction_data)
+        
+        # 🚨 SEND PREDICTIVE EMAIL ALERT
+        # Only send if it's a critical prediction or warning with short time
+        if severity == 'critical' or (severity == 'warning' and time_to_reach <= 15):
+            alert_system.send_prediction_alert(prediction_data, 'Sector 1')
     
     # Temperature Prediction
     if current_temp > 28:
         time_to_reach = random.randint(20, 60)
         severity = 'critical' if prediction_result['predicted_temp'] > 35 else 'warning'
         
-        predictions.append({
+        prediction_data = {
             'id': 'pred-temp',
             'sector': 'Sector 1',
             'gasType': 'Temperature',
@@ -92,7 +101,13 @@ def get_predictions(request):
             'severity': severity,
             'recommendation': 'Extreme temperature predicted. Implement cooling protocols.' if severity == 'critical' else 'Rising temperature. Monitor closely.',
             'timestamp': datetime.now().isoformat()
-        })
+        }
+        
+        predictions.append(prediction_data)
+        
+        # 🚨 SEND PREDICTIVE EMAIL ALERT
+        if severity == 'critical' or (severity == 'warning' and time_to_reach <= 20):
+            alert_system.send_prediction_alert(prediction_data, 'Sector 1')
     
     return JsonResponse({
         'predictions': predictions,
