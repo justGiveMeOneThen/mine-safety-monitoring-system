@@ -1,4 +1,4 @@
-<!-- templates/monitoring/analytics.html - FIXED VERSION -->
+<!-- templates/monitoring/analytics.html - REAL-TIME VERSION -->
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
@@ -28,13 +28,24 @@
                     <div>
                         <h1 class="text-2xl font-bold text-slate-800" style="font-family: 'Pacifico', cursive;">
                             Analytics Dashboard</h1>
-                        <p class="text-sm text-slate-500">Historical Data & Trends</p>
+                        <p class="text-sm text-slate-500">Historical Data & Trends <span id="refreshStatus"
+                                class="text-green-600 font-medium">● Live</span></p>
                     </div>
                 </div>
-                <a href="{% url 'monitoring:dashboard' %}"
-                    class="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                    ← Back to Dashboard
-                </a>
+                <div class="flex items-center space-x-4">
+                    <!-- Auto-refresh toggle -->
+                    <div class="flex items-center space-x-2">
+                        <label class="text-sm text-slate-600 font-medium">Auto-refresh:</label>
+                        <button id="toggleAutoRefresh" onclick="toggleAutoRefresh()"
+                            class="px-3 py-1 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition">
+                            ON
+                        </button>
+                    </div>
+                    <a href="{% url 'monitoring:dashboard' %}"
+                        class="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                        ← Back to Dashboard
+                    </a>
+                </div>
             </div>
         </div>
     </header>
@@ -44,7 +55,11 @@
         <!-- Time Range Selector -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
             <div class="flex items-center justify-between">
-                <h2 class="text-lg font-bold text-slate-800">Time Range</h2>
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800">Time Range</h2>
+                    <p class="text-xs text-slate-500 mt-1">Last updated: <span id="lastUpdate"
+                            class="font-medium">--</span></p>
+                </div>
                 <div class="flex space-x-2">
                     <button onclick="loadHistoricalData(6)"
                         class="px-4 py-2 bg-slate-200 hover:bg-indigo-600 hover:text-white rounded-lg text-sm font-medium transition">6h</button>
@@ -158,42 +173,82 @@
 
     <script>
         let coChart, tempChart, combinedChart;
-
-        let currentFullData = []; // Store full 24h data
+        let currentFullData = [];
         let currentHours = 24;
+        let autoRefreshEnabled = true;
+        let refreshInterval = null;
 
-        async function loadHistoricalData(hours = 24) {
+        // ============ AUTO-REFRESH FUNCTIONALITY ============
+        function startAutoRefresh() {
+            // Refresh every 5 seconds to match dashboard update rate
+            refreshInterval = setInterval(() => {
+                if (autoRefreshEnabled) {
+                    loadHistoricalData(currentHours, true); // true = silent refresh
+                }
+            }, 5000); // 5 seconds
+        }
+
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            const btn = document.getElementById('toggleAutoRefresh');
+            const status = document.getElementById('refreshStatus');
+
+            if (autoRefreshEnabled) {
+                btn.textContent = 'ON';
+                btn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                btn.classList.add('bg-green-600', 'hover:bg-green-700');
+                status.textContent = '● Live';
+                status.classList.remove('text-red-600');
+                status.classList.add('text-green-600');
+                loadHistoricalData(currentHours); // Refresh immediately
+            } else {
+                btn.textContent = 'OFF';
+                btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                btn.classList.add('bg-red-600', 'hover:bg-red-700');
+                status.textContent = '○ Paused';
+                status.classList.remove('text-green-600');
+                status.classList.add('text-red-600');
+            }
+        }
+
+        // ============ DATA LOADING ============
+        async function loadHistoricalData(hours = 24, silent = false) {
             currentHours = hours;
             try {
                 const response = await fetch('/api/historical-data/');
                 const data = await response.json();
 
-                // Save full dataset
-                currentFullData = data.historicalData; // Must match backend key!
-
-                // Filter: take last 'hours' entries (most recent)
+                currentFullData = data.historicalData;
                 const filteredData = currentFullData.slice(-hours);
 
                 updateCharts(filteredData);
                 updateStatistics(filteredData);
 
-                // Update active button
-                document.querySelectorAll('button[onclick^="loadHistoricalData"]').forEach(btn => {
-                    btn.classList.remove('bg-indigo-600', 'text-white');
-                    btn.classList.add('bg-slate-200');
-                });
-                // Find the clicked button by hours
-                const clickedBtn = Array.from(document.querySelectorAll('button'))
-                    .find(btn => btn.getAttribute('onclick') === `loadHistoricalData(${hours})`);
-                if (clickedBtn) {
-                    clickedBtn.classList.remove('bg-slate-200');
-                    clickedBtn.classList.add('bg-indigo-600', 'text-white');
+                // Update last refresh time
+                const now = new Date();
+                document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+
+                // Update active button (only if not a silent refresh)
+                if (!silent) {
+                    document.querySelectorAll('button[onclick^="loadHistoricalData"]').forEach(btn => {
+                        btn.classList.remove('bg-indigo-600', 'text-white');
+                        btn.classList.add('bg-slate-200');
+                    });
+                    const clickedBtn = Array.from(document.querySelectorAll('button'))
+                        .find(btn => btn.getAttribute('onclick') === `loadHistoricalData(${hours})`);
+                    if (clickedBtn) {
+                        clickedBtn.classList.remove('bg-slate-200');
+                        clickedBtn.classList.add('bg-indigo-600', 'text-white');
+                    }
                 }
             } catch (error) {
                 console.error('Error loading historical data:', error);
+                document.getElementById('refreshStatus').textContent = '● Error';
+                document.getElementById('refreshStatus').classList.add('text-red-600');
             }
         }
 
+        // ============ CHART UPDATES ============
         function updateCharts(data) {
             const labels = data.map(d => {
                 const date = new Date(d.timestamp);
@@ -224,6 +279,9 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: {
+                        duration: 500 // Smooth animation for updates
+                    },
                     plugins: {
                         legend: {
                             display: true,
@@ -277,6 +335,9 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: {
+                        duration: 500
+                    },
                     plugins: {
                         legend: {
                             display: true,
@@ -343,6 +404,9 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: {
+                        duration: 500
+                    },
                     interaction: {
                         mode: 'index',
                         intersect: false,
@@ -394,6 +458,7 @@
             });
         }
 
+        // ============ STATISTICS UPDATE ============
         function updateStatistics(data) {
             const coLevels = data.map(d => d.carbonMonoxide);
             const tempLevels = data.map(d => d.temperature);
@@ -415,20 +480,21 @@
             document.getElementById('maxTempTime').textContent = `at ${new Date(data[maxTempIndex].timestamp).toLocaleTimeString()}`;
         }
 
+        // ============ CSV EXPORT ============
         function exportToCSV() {
             if (!currentFullData || currentFullData.length === 0) {
                 alert("No data to export. Please load data first.");
                 return;
             }
 
-            const filteredData = currentFullData.slice(-currentHours); // Use current time range
+            const filteredData = currentFullData.slice(-currentHours);
 
             let csvContent = "data:text/csv;charset=utf-8,";
             csvContent += "Timestamp,Carbon Monoxide (ppm),Temperature (°C)\n";
 
             filteredData.forEach(row => {
                 const date = new Date(row.timestamp);
-                const formattedTime = date.toLocaleString('en-CA', { timeZone: 'UTC' }); // ISO-like local
+                const formattedTime = date.toLocaleString('en-CA', { timeZone: 'UTC' });
                 csvContent += `"${formattedTime}",${row.carbonMonoxide},${row.temperature}\n`;
             });
 
@@ -441,8 +507,18 @@
             document.body.removeChild(link);
         }
 
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', () => loadHistoricalData(24));
+        // ============ INITIALIZATION ============
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHistoricalData(24); // Initial load
+            startAutoRefresh();      // Start auto-refresh timer
+        });
+
+        // Clean up interval when page is closed
+        window.addEventListener('beforeunload', () => {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
     </script>
 </body>
 

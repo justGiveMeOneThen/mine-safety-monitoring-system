@@ -75,11 +75,11 @@ class PredictiveAlertSystem:
             
             # Record alert
             self.alert_history[alert_id] = datetime.now()
-            logger.info(f"✅ Prediction alert sent: {alert_id}")
+            logger.info(f"[SUCCESS] Prediction alert sent: {alert_id}")
             return True
             
         except Exception as e:
-            logger.error(f"❌ Failed to send alert: {e}")
+            logger.error(f"[ERROR] Failed to send alert: {e}")
             return False
     
     def _determine_urgency(self, severity, time_to_reach):
@@ -283,7 +283,7 @@ http://127.0.0.1:8000/dashboard/
                 recipient_list=[settings.DEFAULT_ALERT_EMAIL],
                 fail_silently=False,
             )
-            logger.info(f"✅ All clear notification sent for {sector_name}")
+            logger.info(f"[SUCCESS] All clear notification sent for {sector_name}")
         except Exception as e:
             logger.error(f"❌ Failed to send all clear: {e}")
 
