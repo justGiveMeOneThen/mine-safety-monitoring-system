@@ -11,3 +11,9 @@ venv/
 env/
 
 .env
+
+.vscode/
+settings.json
+
+logs/
+*.log

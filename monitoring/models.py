@@ -1,10 +1,8 @@
-# monitoring/models.py
-
 from django.db import models
 from django.utils import timezone
 
 class Sector(models.Model):
-    """Mine sector information"""
+    #Mine sector information
     name = models.CharField(max_length=50, unique=True)
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
@@ -18,10 +16,6 @@ class Sector(models.Model):
 
 
 class SensorReading(models.Model):
-    """
-    Store sensor readings from ESP32
-    Future: Will be populated via serial port data
-    """
     sector = models.ForeignKey(Sector, on_delete=models.CASCADE, related_name='readings')
     carbon_monoxide = models.FloatField(help_text='CO level in ppm')
     temperature = models.FloatField(help_text='Temperature in Celsius')
@@ -43,7 +37,7 @@ class SensorReading(models.Model):
     
     @property
     def co_status(self):
-        """Return CO level status"""
+        #Return CO level status
         if self.carbon_monoxide > 50:
             return 'critical'
         elif self.carbon_monoxide > 30:
@@ -52,7 +46,7 @@ class SensorReading(models.Model):
     
     @property
     def temp_status(self):
-        """Return temperature status"""
+        #Return temperature status
         if self.temperature > 35:
             return 'critical'
         elif self.temperature > 30:
@@ -61,7 +55,7 @@ class SensorReading(models.Model):
 
 
 class Prediction(models.Model):
-    """Store ML model predictions"""
+    #Store ML model predictions
     SEVERITY_CHOICES = [
         ('normal', 'Normal'),
         ('warning', 'Warning'),
@@ -90,7 +84,7 @@ class Prediction(models.Model):
 
 
 class Alert(models.Model):
-    """Store safety alerts"""
+    #Store safety alerts
     ALERT_TYPES = [
         ('co_high', 'High CO Level'),
         ('temp_high', 'High Temperature'),
@@ -125,9 +119,8 @@ class Alert(models.Model):
 
 
 class ESP32Device(models.Model):
-    """
-    Store ESP32 device information for future IoT integration
-    """
+    #Store ESP32 device information for future IoT integration
+    
     device_id = models.CharField(max_length=50, unique=True)
     sector = models.ForeignKey(Sector, on_delete=models.CASCADE, related_name='devices')
     serial_port = models.CharField(max_length=50, blank=True, help_text='e.g., /dev/ttyUSB0 or COM3')

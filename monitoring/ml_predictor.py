@@ -1,8 +1,6 @@
-# monitoring/ml_predictor.py - EXACT MATCH TO YOUR TRAINING
-
 import joblib
 import numpy as np
-import pandas as pd
+import pandas as pd # type: ignore
 from django.conf import settings
 from collections import deque
 import os
@@ -16,11 +14,11 @@ class RiskPredictor:
         self.gas_history = deque(maxlen=5)
     
     def load_model(self):
-        """Load the trained risk_model.joblib"""
+        #Load the trained risk_model.joblib
         try:
             if os.path.exists(settings.ML_MODEL_PATH):
                 self.model = joblib.load(settings.ML_MODEL_PATH)
-                print("✅ ML Model loaded successfully: risk_model.joblib")
+                print("✅ ML Model loaded successfully.")
             else:
                 print("⚠️ ML Model not found. Using fallback predictions.")
                 self.model = None
@@ -29,19 +27,6 @@ class RiskPredictor:
             self.model = None
     
     def predict_risk(self, co_level, temperature):
-        """
-        Predict risk level using the trained model
-        Input: CO level (ppm), Temperature (°C)
-        Output: Predicted risk level and future values
-        
-        Model expects these 6 features (in this exact order):
-        1. temperature
-        2. gas (CO level)
-        3. temp_avg_5min
-        4. gas_avg_5min
-        5. temp_rate_of_change
-        6. gas_rate_of_change
-        """
         if self.model is None:
             return self._fallback_prediction(co_level, temperature)
         
@@ -120,7 +105,7 @@ class RiskPredictor:
             return self._fallback_prediction(co_level, temperature)
     
     def _fallback_prediction(self, co_level, temperature):
-        """Rule-based fallback when ML model is unavailable"""
+        #Rule-based fallback when ML model is unavailable
         predicted_co = co_level + (co_level * 0.15)
         predicted_temp = temperature + (temperature * 0.08)
         
@@ -141,7 +126,7 @@ class RiskPredictor:
         }
     
     def reset_history(self):
-        """Reset the history buffers (useful for new monitoring sessions)"""
+        #Reset the history buffers (useful for new monitoring sessions)
         self.temp_history.clear()
         self.gas_history.clear()
 

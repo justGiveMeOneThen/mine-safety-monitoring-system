@@ -1,14 +1,9 @@
-# monitoring/views.py
-# Mine Safety Monitoring System - Complete Views
-# Serial format: {"sector":"Sector 1","temperature":27.50,"carbon_monoxide":142}
-
 import json
 import threading
 import serial
 import serial.tools.list_ports
 from datetime import datetime, timedelta
 from collections import deque
-
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -20,14 +15,14 @@ try:
     from .ml_predictor import predictor
     ML_AVAILABLE = True
 except Exception as e:
-    print(f"⚠️ ML predictor not available: {e}")
+    print(f"ML predictor not available: {e}")
     ML_AVAILABLE = False
 
 try:
     from .alerts import alert_system
     ALERTS_AVAILABLE = True
 except Exception as e:
-    print(f"⚠️ Alert system not available: {e}")
+    print(f"Alert system not available: {e}")
     ALERTS_AVAILABLE = False
 
 
@@ -36,12 +31,6 @@ except Exception as e:
 # ============================================================
 
 class SerialDataManager:
-    """
-    Manages the serial connection to ESP32 on COM9.
-    Runs in a background thread, stores latest reading
-    and a rolling 24-hour history buffer.
-    """
-
     SERIAL_PORT = "COM9"
     BAUD_RATE   = 115200
     TIMEOUT     = 3           # seconds
@@ -60,7 +49,7 @@ class SerialDataManager:
     # ---- Public API ----
 
     def start(self):
-        """Start the background serial reader thread."""
+        #Start the background serial reader thread.
         if self._thread and self._thread.is_alive():
             return
         self.running = True
@@ -77,19 +66,19 @@ class SerialDataManager:
                 pass
 
     def get_latest(self):
-        """Return the most recent sensor reading (thread-safe)."""
+        #Return the most recent sensor reading (thread-safe)
         with self.lock:
             return self.latest_reading.copy() if self.latest_reading else None
 
     def get_history(self):
-        """Return a list of historical readings (thread-safe)."""
+        #Return a list of historical readings (thread-safe)
         with self.lock:
             return list(self.history)
 
     # ---- Internal ----
 
     def _read_loop(self):
-        """Continuously read from the serial port."""
+        #Continuously read from the serial port
         while self.running:
             try:
                 self._connect()
@@ -98,23 +87,23 @@ class SerialDataManager:
                     if line.startswith("{") and line.endswith("}"):
                         self._parse_and_store(line)
             except serial.SerialException as e:
-                print(f"⚠️ Serial error: {e}. Retrying in 5s…")
+                print(f"Serial error: {e}. Retrying in 5s…")
                 self._safe_close()
                 threading.Event().wait(5)
             except Exception as e:
-                print(f"❌ Unexpected serial error: {e}")
+                print(f"Unexpected serial error: {e}")
                 self._safe_close()
                 threading.Event().wait(5)
 
     def _connect(self):
-        """Open the serial port."""
+        #Open the serial port
         self._safe_close()
         self.serial_conn = serial.Serial(
             port=self.SERIAL_PORT,
             baudrate=self.BAUD_RATE,
             timeout=self.TIMEOUT,
         )
-        print(f"🔌 Connected to {self.SERIAL_PORT}")
+        print(f"Connected to {self.SERIAL_PORT}")
 
     def _safe_close(self):
         if self.serial_conn:
@@ -125,11 +114,6 @@ class SerialDataManager:
             self.serial_conn = None
 
     def _parse_and_store(self, raw_json: str):
-        """
-        Parse ESP32 JSON and store reading.
-        Expected format:
-            {"sector":"Sector 1","temperature":27.50,"carbon_monoxide":142}
-        """
         try:
             data = json.loads(raw_json)
 
@@ -167,7 +151,7 @@ serial_manager.start()
 # ============================================================
 
 def _check_and_alert(reading):
-    """Run ML prediction and fire alert emails if needed."""
+    #Run ML prediction and fire alert emails if needed.
     if not (ML_AVAILABLE and ALERTS_AVAILABLE):
         return
 
@@ -220,7 +204,7 @@ def _check_and_alert(reading):
             pass
 
     except Exception as e:
-        print(f"⚠️ Alert check error: {e}")
+        print(f"Alert check error: {e}")
 
 
 # ============================================================
@@ -228,7 +212,7 @@ def _check_and_alert(reading):
 # ============================================================
 
 def _demo_sensor():
-    """Return a fake reading for when serial isn't connected."""
+    #Return a fake reading for when serial isn't connected
     import math, time
     t = time.time()
     return {
@@ -241,7 +225,7 @@ def _demo_sensor():
 
 
 def _demo_history(hours=24):
-    """Generate synthetic history when no real data exists."""
+    #Generate synthetic history when no real data exists.
     import math, random
     history = []
     now = datetime.now()
@@ -262,7 +246,7 @@ def _demo_history(hours=24):
 # ============================================================
 
 def home(request):
-    """Redirect root to dashboard."""
+    #Redirect root to dashboard.
     return redirect("monitoring:dashboard")
 
 
@@ -282,15 +266,8 @@ def analytics(request):
 
 @require_http_methods(["GET"])
 def get_sensor_data(request):
-    """
-    GET /api/sensor-data/
-
-    Returns current sensor readings for all 6 sectors.
-    Only Sector 1 is active (real ESP32 data); others show as inactive.
-    """
     reading = serial_manager.get_latest() or _demo_sensor()
-
-    # Build all 6 sectors — only Sector 1 is live
+# Build all 6 sectors — only Sector 1 is live
     sectors = []
     for i in range(1, 7):
         if i == 1:
@@ -318,12 +295,6 @@ def get_sensor_data(request):
 
 @require_http_methods(["GET"])
 def get_predictions(request):
-    """
-    GET /api/predictions/
-
-    Runs the ML model on the latest sensor reading
-    and returns structured prediction cards for the dashboard.
-    """
     reading = serial_manager.get_latest() or _demo_sensor()
     co      = reading["carbon_monoxide"]
     temp    = reading["temperature"]
@@ -400,12 +371,6 @@ def get_predictions(request):
 
 @require_http_methods(["GET"])
 def get_historical_data(request):
-    """
-    GET /api/historical-data/
-
-    Returns up to 24 hours of sensor history for the analytics charts.
-    Falls back to synthetic demo data if no real data has been collected yet.
-    """
     history = serial_manager.get_history()
 
     if not history:
@@ -424,7 +389,7 @@ def get_historical_data(request):
 
 @require_http_methods(["GET"])
 def serial_status(request):
-    """GET /api/serial-status/ — quick health check."""
+    #GET /api/serial-status/ — quick health check.
     connected = (
         serial_manager.serial_conn is not None
         and serial_manager.serial_conn.is_open

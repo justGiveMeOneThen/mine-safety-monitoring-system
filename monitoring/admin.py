@@ -1,5 +1,3 @@
-# monitoring/admin.py
-
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Sector, SensorReading, Prediction, Alert, ESP32Device

@@ -1,9 +1,6 @@
-"""
-Django settings for mine_safety_project project.
-"""
 import os
 from pathlib import Path
-from dotenv import load_dotenv
+from dotenv import load_dotenv # type: ignore
 
 load_dotenv()  # Loads variables from .env file
 
@@ -13,15 +10,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-@x0n!ixrm7jmwnj)0dek=om&ly1ijl&9*%p9ny_2+9xpl*o+-0'
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
-# FIX 3: Prevents Django migration warnings
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -63,37 +57,27 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'mine_safety_project.wsgi.application'
 
-# ── Static Files ───────────────────────────────────────────────────────────────
-# FIX 2: Only one STATIC_URL definition (the original had two)
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
-# ── ML Model ───────────────────────────────────────────────────────────────────
 ML_MODEL_PATH = BASE_DIR / 'ml_models' / 'risk_model.joblib'
 
-# ── Email Configuration ────────────────────────────────────────────────────────
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'simbanaitatenda@gmail.com')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')  # Always from .env
-
-# ── Alert Recipients ───────────────────────────────────────────────────────────
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_ALERT_EMAIL = 'freefoodandfreestuffusa@gmail.com'
 CRITICAL_ALERT_EMAILS = [
     'americansfoodreserve@gmail.com',
     'freefoodieusa@gmail.com',
 ]
 
-# ── Login Redirects ────────────────────────────────────────────────────────────
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
-
-# ── Database ───────────────────────────────────────────────────────────────────
-# FIX 1: DB password now loaded from .env file
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -105,7 +89,6 @@ DATABASES = {
     }
 }
 
-# ── Logging ────────────────────────────────────────────────────────────────────
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -128,7 +111,6 @@ LOGGING = {
     },
 }
 
-# ── Password Validation ────────────────────────────────────────────────────────
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -136,7 +118,6 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# ── Internationalisation ───────────────────────────────────────────────────────
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True

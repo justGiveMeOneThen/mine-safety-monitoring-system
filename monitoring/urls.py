@@ -12,7 +12,5 @@ urlpatterns = [
     path('api/sensor-data/', views.get_sensor_data, name='sensor_data'),
     path('api/predictions/', views.get_predictions, name='predictions'),
     path('api/historical-data/', views.get_historical_data, name='historical_data'),
-
-    # Debug: visit http://127.0.0.1:8000/api/serial-status/ to check connection
     path('api/serial-status/', views.serial_status, name='serial_status'),
 ]

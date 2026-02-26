@@ -6,17 +6,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 class PredictiveAlertSystem:
-    """
-    Intelligent alert system based on ML predictions
-    Sends alerts when disaster is predicted, not just when it occurs
-    """
-    
     def __init__(self):
         self.alert_history = {}  # Track sent alerts to avoid spam
         self.alert_cooldown = 300  # 5 minutes between same alerts
     
     def should_send_alert(self, alert_id):
-        """Check if enough time has passed since last alert"""
+        #Check if enough time has passed since last alert
         if alert_id not in self.alert_history:
             return True
         
@@ -26,13 +21,6 @@ class PredictiveAlertSystem:
         return time_since_last >= self.alert_cooldown
     
     def send_prediction_alert(self, prediction_data, sector_name):
-        """
-        Send alert based on ML prediction
-        
-        Args:
-            prediction_data: dict containing prediction info
-            sector_name: name of the affected sector
-        """
         severity = prediction_data.get('severity')
         gas_type = prediction_data.get('gasType')
         current_level = prediction_data.get('currentLevel')
@@ -83,7 +71,7 @@ class PredictiveAlertSystem:
             return False
     
     def _determine_urgency(self, severity, time_to_reach):
-        """Determine urgency based on severity and time"""
+        #Determine urgency based on severity and time
         if severity == 'critical':
             if time_to_reach <= 10:
                 return 'IMMEDIATE'
@@ -99,7 +87,7 @@ class PredictiveAlertSystem:
         return 'INFO'
     
     def _build_subject(self, severity, sector, gas_type, time_to_reach):
-        """Build email subject line"""
+        #Build email subject line
         emoji = '🚨' if severity == 'critical' else '⚠️'
         
         if time_to_reach <= 10:
@@ -112,7 +100,7 @@ class PredictiveAlertSystem:
         return f"{emoji} {urgency_text}: {gas_type} Prediction - {sector}"
     
     def _build_message(self, sector, gas_type, current, predicted, 
-                       time_to_reach, severity, recommendation, urgency):
+                    time_to_reach, severity, recommendation, urgency):
         """Build plain text email message"""
         unit = '°C' if gas_type == 'Temperature' else 'ppm'
         
@@ -137,16 +125,15 @@ RECOMMENDED ACTION:
 {recommendation}
 
 {'=' * 50}
-This is an automated alert from the Mine Safety ML Prediction System.
+This is an automated alert from the Mine Safety System.
 Alert generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-DO NOT REPLY to this email. Check the dashboard for real-time updates:
-http://127.0.0.1:8000/dashboard/
+DO NOT REPLY to this email. Check the dashboard for real-time updates
         """
     
     def _build_html_message(self, sector, gas_type, current, predicted,
                             time_to_reach, severity, recommendation, urgency):
-        """Build HTML email message"""
+        #Build HTML email message
         unit = '°C' if gas_type == 'Temperature' else 'ppm'
         
         # Color scheme based on severity
@@ -192,13 +179,13 @@ http://127.0.0.1:8000/dashboard/
                 <p><strong>Severity:</strong> {severity.upper()}</p>
             </div>
             
-            <h3>📊 Current Readings</h3>
+            <h3>Current Readings</h3>
             <div class="metric">
                 <div class="metric-label">CURRENT {gas_type.upper()}</div>
                 <div class="metric-value">{current:.2f} {unit}</div>
             </div>
             
-            <h3>🔮 AI Prediction</h3>
+            <h3>AI Prediction</h3>
             <div class="metric">
                 <div class="metric-label">PREDICTED LEVEL</div>
                 <div class="metric-value">{predicted:.2f} {unit}</div>
@@ -221,23 +208,15 @@ http://127.0.0.1:8000/dashboard/
             </div>
             
             <div class="recommendation">
-                <h3 style="margin-top: 0;">💡 Recommended Action</h3>
+                <h3 style="margin-top: 0;">Recommended Action</h3>
                 <p>{recommendation}</p>
-            </div>
-            
-            <div style="text-align: center; margin: 20px 0;">
-                <a href="http://127.0.0.1:8000/dashboard/" 
-                   style="background: #4f46e5; color: white; padding: 12px 24px; 
-                          text-decoration: none; border-radius: 6px; display: inline-block;">
-                    View Live Dashboard
-                </a>
             </div>
         </div>
         
         <div class="footer">
-            <p>This is an automated alert from the Mine Safety ML Prediction System</p>
+            <p>This is an automated alert from the Mine Safety System</p>
             <p>Alert generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-            <p><strong>DO NOT REPLY</strong> to this email</p>
+            <p><strong>DO NOT REPLY</strong> on this email.</p>
         </div>
     </div>
 </body>
@@ -245,7 +224,7 @@ http://127.0.0.1:8000/dashboard/
         """
     
     def _get_recipients(self, severity):
-        """Get recipient list based on severity"""
+        #Get recipient list based on severity
         # Get from settings or database
         recipients = [settings.DEFAULT_ALERT_EMAIL]
         
@@ -257,7 +236,7 @@ http://127.0.0.1:8000/dashboard/
     
     def send_all_clear_notification(self, sector_name):
         """Send notification when conditions return to normal"""
-        subject = f"✅ ALL CLEAR: {sector_name} - Conditions Normalized"
+        subject = f"ALL CLEAR: {sector_name} - Conditions Normalized"
         
         message = f"""
 MINE SAFETY STATUS UPDATE
@@ -272,7 +251,6 @@ No immediate hazards detected.
 Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
 Continue monitoring via dashboard:
-http://127.0.0.1:8000/dashboard/
         """
         
         try:
@@ -285,7 +263,7 @@ http://127.0.0.1:8000/dashboard/
             )
             logger.info(f"[SUCCESS] All clear notification sent for {sector_name}")
         except Exception as e:
-            logger.error(f"❌ Failed to send all clear: {e}")
+            logger.error(f"Failed to send all clear: {e}")
 
 
 # Initialize alert system
