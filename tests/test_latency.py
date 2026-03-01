@@ -1,16 +1,7 @@
-# =============================================================================
-# FILE 1: tests/test_latency.py
-# PURPOSE: Measures system latency across all 4 categories
-# WHERE TO PUT IT: Create a folder called 'tests' in your project root
-#                  (same level as manage.py), put this file inside it
-# HOW TO RUN: python tests/test_latency.py
-# WHAT TO EXPECT: A printed report with ms/s timings for each category
-# =============================================================================
-
 import time
 import json
 import serial
-import requests
+import requests # type: ignore
 import statistics
 from datetime import datetime
 

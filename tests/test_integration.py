@@ -1,20 +1,3 @@
-# =============================================================================
-# FILE 4: tests/test_integration.py
-# PURPOSE: Integration tests for Serial Bridge + Database
-#          Part A: Floods serial port with malformed data to test robustness
-#          Part B: Tests Django backend ↔ PostgreSQL database interaction
-# WHERE TO PUT IT: tests/ folder
-# HOW TO RUN:
-#   Part A (serial flood): python tests/test_integration.py --serial
-#                          ⚠️  Run WITHOUT Django server running (needs COM9 free)
-#   Part B (database):     python tests/test_integration.py --database
-#                          ⚠️  Run WITH Django server running
-#   Both together:         python tests/test_integration.py --all
-# WHAT TO EXPECT:
-#   Part A: Parser should survive all malformed inputs, only accepting valid JSON
-#   Part B: All API endpoints return correct data structures from the database
-# =============================================================================
-
 import os
 import sys
 import json
@@ -24,7 +7,7 @@ import struct
 import random
 import string
 import argparse
-import requests
+import requests # type: ignore
 import threading
 from datetime import datetime
 
@@ -48,21 +31,6 @@ def separator(title):
 
 # =============================================================================
 # PART A — SERIAL BRIDGE FLOOD TEST
-# =============================================================================
-# This test sends every conceivable type of malformed data into the serial port
-# and verifies that views.py _parse_and_store() handles it without crashing.
-#
-# How it works:
-#   1. This script opens COM9 as if it were the ESP32 (using a loopback)
-#   2. It writes malformed strings into the port
-#   3. A reader thread (simulating Django's serial reader) receives them
-#   4. We count how many were correctly REJECTED vs accidentally ACCEPTED
-#
-# ⚠️  NOTE: For a real loopback test you need a USB loopback adapter
-#    (TX connected to RX on the same COM port) OR a virtual COM port pair.
-#    If you don't have one, this test simulates the parser logic directly
-#    without actual serial hardware, which is equally valid for unit testing
-#    the parser's robustness.
 # =============================================================================
 
 # Malformed data samples — every type of bad input imaginable

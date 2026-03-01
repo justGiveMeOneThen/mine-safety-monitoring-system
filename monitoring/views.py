@@ -9,6 +9,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
+from .models import SensorReading, Sector
 
 # Import your ML predictor and alert system
 try:
@@ -27,29 +29,63 @@ except Exception as e:
 
 
 # ============================================================
+# DATABASE HELPER
+# ============================================================
+
+def _save_to_database(reading_dict):
+    """
+    Save sensor reading to PostgreSQL database.
+    """
+    try:
+        # Get or create the sector
+        sector, created = Sector.objects.get_or_create(
+            name=reading_dict["sector"],
+            defaults={"description": "Auto-created from sensor data"}
+        )
+        
+        if created:
+            print(f"✅ Created new sector: {sector.name}")
+        
+        # Create sensor reading
+        SensorReading.objects.create(
+            sector=sector,
+            carbon_monoxide=reading_dict["carbon_monoxide"],
+            temperature=reading_dict["temperature"],
+        )
+        
+        # Optional: Clean old data (keep only last 7 days)
+        cutoff = timezone.now() - timedelta(days=7)
+        deleted_count, _ = SensorReading.objects.filter(timestamp__lt=cutoff).delete()
+        
+        if deleted_count > 0:
+            print(f"🗑️ Cleaned {deleted_count} old readings")
+            
+    except Exception as e:
+        print(f"❌ Database save error: {e}")
+        import traceback
+        traceback.print_exc()
+
+
+# ============================================================
 # SERIAL READER - Runs in background thread
 # ============================================================
 
 class SerialDataManager:
     SERIAL_PORT = "COM9"
     BAUD_RATE   = 115200
-    TIMEOUT     = 3           # seconds
+    TIMEOUT     = 3
 
-    # Keep last 24 hours at one reading per 5 seconds = 17,280 readings
-    MAX_HISTORY = 17280
+    MAX_HISTORY = 17280  # 24 hours at 5s intervals
 
     def __init__(self):
-        self.latest_reading = None          # Most recent parsed reading
+        self.latest_reading = None
         self.history        = deque(maxlen=self.MAX_HISTORY)
         self.lock           = threading.Lock()
         self.running        = False
         self.serial_conn    = None
         self._thread        = None
 
-    # ---- Public API ----
-
     def start(self):
-        #Start the background serial reader thread.
         if self._thread and self._thread.is_alive():
             return
         self.running = True
@@ -66,19 +102,14 @@ class SerialDataManager:
                 pass
 
     def get_latest(self):
-        #Return the most recent sensor reading (thread-safe)
         with self.lock:
             return self.latest_reading.copy() if self.latest_reading else None
 
     def get_history(self):
-        #Return a list of historical readings (thread-safe)
         with self.lock:
             return list(self.history)
 
-    # ---- Internal ----
-
     def _read_loop(self):
-        #Continuously read from the serial port
         while self.running:
             try:
                 self._connect()
@@ -96,7 +127,6 @@ class SerialDataManager:
                 threading.Event().wait(5)
 
     def _connect(self):
-        #Open the serial port
         self._safe_close()
         self.serial_conn = serial.Serial(
             port=self.SERIAL_PORT,
@@ -128,20 +158,22 @@ class SerialDataManager:
             with self.lock:
                 self.latest_reading = reading
                 self.history.append({
-                    "timestamp":     reading["timestamp"],
+                    "timestamp":      reading["timestamp"],
                     "carbonMonoxide": reading["carbon_monoxide"],
-                    "temperature":   reading["temperature"],
+                    "temperature":    reading["temperature"],
                 })
+
+            # ✨ Save to database
+            _save_to_database(reading)
 
             # Trigger async ML alert check
             _check_and_alert(reading)
 
         except (json.JSONDecodeError, ValueError) as e:
-            # Ignore non-JSON lines (banner text, debug output, etc.)
             pass
 
 
-# Singleton manager + auto-start on first import
+# Singleton manager + auto-start
 serial_manager = SerialDataManager()
 serial_manager.start()
 
@@ -151,7 +183,6 @@ serial_manager.start()
 # ============================================================
 
 def _check_and_alert(reading):
-    #Run ML prediction and fire alert emails if needed.
     if not (ML_AVAILABLE and ALERTS_AVAILABLE):
         return
 
@@ -163,7 +194,6 @@ def _check_and_alert(reading):
         risk   = result.get("risk_level", "normal")
 
         if risk in ("warning", "critical"):
-            # ---- CO alert ----
             if co > 30:
                 alert_system.send_prediction_alert(
                     prediction_data={
@@ -181,7 +211,6 @@ def _check_and_alert(reading):
                     sector_name=reading["sector"],
                 )
 
-            # ---- Temperature alert ----
             if temp > 28:
                 alert_system.send_prediction_alert(
                     prediction_data={
@@ -199,10 +228,6 @@ def _check_and_alert(reading):
                     sector_name=reading["sector"],
                 )
 
-        elif risk == "normal":
-            # Optionally send all-clear (alert_system has cooldown built in)
-            pass
-
     except Exception as e:
         print(f"Alert check error: {e}")
 
@@ -212,7 +237,6 @@ def _check_and_alert(reading):
 # ============================================================
 
 def _demo_sensor():
-    #Return a fake reading for when serial isn't connected
     import math, time
     t = time.time()
     return {
@@ -225,11 +249,10 @@ def _demo_sensor():
 
 
 def _demo_history(hours=24):
-    #Generate synthetic history when no real data exists.
     import math, random
     history = []
     now = datetime.now()
-    points = hours * 12  # one per 5 min
+    points = hours * 12
 
     for i in range(points):
         ts = now - timedelta(minutes=(points - i) * 5)
@@ -245,8 +268,8 @@ def _demo_history(hours=24):
 # PAGE VIEWS
 # ============================================================
 
+@login_required
 def home(request):
-    #Redirect root to dashboard.
     return redirect("monitoring:dashboard")
 
 
@@ -264,10 +287,11 @@ def analytics(request):
 # API ENDPOINTS
 # ============================================================
 
+@login_required
 @require_http_methods(["GET"])
 def get_sensor_data(request):
     reading = serial_manager.get_latest() or _demo_sensor()
-# Build all 6 sectors — only Sector 1 is live
+    
     sectors = []
     for i in range(1, 7):
         if i == 1:
@@ -293,6 +317,7 @@ def get_sensor_data(request):
     })
 
 
+@login_required
 @require_http_methods(["GET"])
 def get_predictions(request):
     reading = serial_manager.get_latest() or _demo_sensor()
@@ -309,12 +334,13 @@ def get_predictions(request):
             model_used = result.get("model_used", "ML Model")
         except Exception as e:
             print(f"⚠️ Prediction error: {e}")
+            import traceback
+            traceback.print_exc()
             risk      = "normal"
             pred_co   = co * 1.15
-            pred_temp = temp * 1.08
+            pred_temp  = temp * 1.08
             model_used = "Rule-based (Fallback)"
     else:
-        # Rule-based fallback
         if co > 50 or temp > 35:
             risk = "critical"
         elif co > 30 or temp > 30:
@@ -325,41 +351,46 @@ def get_predictions(request):
         pred_temp  = temp * 1.08
         model_used = "Rule-based (Fallback)"
 
-    # Only surface predictions when something is off
     predictions = []
 
-    if risk in ("warning", "critical"):
-        if co > 25:
-            predictions.append({
-                "sector":         sector,
-                "gasType":        "Carbon Monoxide",
-                "severity":       risk,
-                "currentLevel":   round(co, 2),
-                "predictedLevel": round(pred_co, 2),
-                "timeToReach":    10 if risk == "critical" else 20,
-                "recommendation": (
-                    "EVACUATE IMMEDIATELY. CO levels dangerously high."
-                    if risk == "critical"
-                    else "Increase ventilation. Alert workers. Monitor closely."
-                ),
-                "modelUsed": model_used,
-            })
+    # CO Prediction (always show if any CO detected)
+    if co >= 0:
+        co_severity = "critical" if co > 50 else "warning" if co > 30 else "normal"
+        predictions.append({
+            "sector":         sector,
+            "gasType":        "Carbon Monoxide",
+            "severity":       co_severity,
+            "currentLevel":   round(co, 2),
+            "predictedLevel": round(pred_co, 2),
+            "timeToReach":    10 if co_severity == "critical" else 20 if co_severity == "warning" else 30,
+            "recommendation": (
+                "EVACUATE IMMEDIATELY. CO levels dangerously high."
+                if co_severity == "critical"
+                else "Increase ventilation. Alert workers. Monitor closely."
+                if co_severity == "warning"
+                else "CO levels normal. Continue monitoring."
+            ),
+            "modelUsed": model_used,
+        })
 
-        if temp > 26:
-            predictions.append({
-                "sector":         sector,
-                "gasType":        "Temperature",
-                "severity":       risk,
-                "currentLevel":   round(temp, 2),
-                "predictedLevel": round(pred_temp, 2),
-                "timeToReach":    15 if risk == "critical" else 25,
-                "recommendation": (
-                    "EVACUATE IMMEDIATELY. Temperature critically high."
-                    if risk == "critical"
-                    else "Check cooling systems. Reduce worker exposure."
-                ),
-                "modelUsed": model_used,
-            })
+    # Temperature Prediction (always show)
+    temp_severity = "critical" if temp > 40 else "warning" if temp > 30 else "normal"
+    predictions.append({
+        "sector":         sector,
+        "gasType":        "Temperature",
+        "severity":       temp_severity,
+        "currentLevel":   round(temp, 2),
+        "predictedLevel": round(pred_temp, 2),
+        "timeToReach":    15 if temp_severity == "critical" else 25 if temp_severity == "warning" else 35,
+        "recommendation": (
+            "EVACUATE IMMEDIATELY. Temperature critically high."
+            if temp_severity == "critical"
+            else "Check cooling systems. Reduce worker exposure."
+            if temp_severity == "warning"
+            else "Temperature normal. Continue monitoring."
+        ),
+        "modelUsed": model_used,
+    })
 
     return JsonResponse({
         "predictions": predictions,
@@ -369,6 +400,7 @@ def get_predictions(request):
     })
 
 
+@login_required
 @require_http_methods(["GET"])
 def get_historical_data(request):
     history = serial_manager.get_history()
@@ -383,13 +415,9 @@ def get_historical_data(request):
     })
 
 
-# ============================================================
-# DEBUG ENDPOINT (remove in production)
-# ============================================================
-
+@login_required
 @require_http_methods(["GET"])
 def serial_status(request):
-    #GET /api/serial-status/ — quick health check.
     connected = (
         serial_manager.serial_conn is not None
         and serial_manager.serial_conn.is_open

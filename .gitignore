@@ -17,3 +17,5 @@ settings.json
 
 logs/
 *.log
+
+monitoring/migrations/0001_initial.py
