@@ -32,7 +32,7 @@ except Exception as e:
 # DATABASE HELPER
 # ============================================================
 
-def _save_to_database(reading_dict):
+def _save_to_database(reading_dict):  # sourcery skip: extract-method
     """
     Save sensor reading to PostgreSQL database.
     """
