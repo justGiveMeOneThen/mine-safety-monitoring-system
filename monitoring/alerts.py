@@ -101,7 +101,7 @@ class PredictiveAlertSystem:
     
     def _build_message(self, sector, gas_type, current, predicted, 
                     time_to_reach, severity, recommendation, urgency):
-        """Build plain text email message"""
+        #Build plain text email message
         unit = '°C' if gas_type == 'Temperature' else 'ppm'
         
         return f"""
@@ -216,7 +216,7 @@ DO NOT REPLY to this email. Check the dashboard for real-time updates
         <div class="footer">
             <p>This is an automated alert from the Mine Safety System</p>
             <p>Alert generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-            <p><strong>DO NOT REPLY</strong> on this email.</p>
+            <p><strong>DO NOT REPLY</strong> on this email only.</p>
         </div>
     </div>
 </body>
@@ -235,7 +235,7 @@ DO NOT REPLY to this email. Check the dashboard for real-time updates
         return recipients
     
     def send_all_clear_notification(self, sector_name):
-        """Send notification when conditions return to normal"""
+        #Send notification when conditions return to normal
         subject = f"ALL CLEAR: {sector_name} - Conditions Normalized"
         
         message = f"""
@@ -250,7 +250,7 @@ No immediate hazards detected.
 
 Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-Continue monitoring via dashboard:
+Continue monitoring via dashboard
         """
         
         try:
