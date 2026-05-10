@@ -11,21 +11,20 @@
 </head>
 
 <body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
-    <!-- Header -->
+
+    <!-- ═══════════════════════ HEADER ═══════════════════════ -->
     <header class="bg-white shadow-xl border-b-4 border-indigo-600">
         <div class="max-w-7xl mx-auto px-6 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3">
-                    <div
-                        class="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
+                    <div class="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
                         <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                         </svg>
                     </div>
                     <div>
-                        <h1 class="text-2xl font-bold text-slate-800" style="font-family: 'Pacifico', cursive;">Mine
-                            Safety Monitor</h1>
+                        <h1 class="text-2xl font-bold text-slate-800" style="font-family: 'Pacifico', cursive;">Mine Safety Monitor</h1>
                         <p class="text-sm text-slate-500">Real-time IoT Monitoring System</p>
                     </div>
                 </div>
@@ -43,10 +42,12 @@
         </div>
     </header>
 
-    <!-- Main Content -->
+    <!-- ═══════════════════ MAIN CONTENT ════════════════════ -->
     <main class="max-w-7xl mx-auto px-6 py-8">
-        <!-- Stats Cards - Make sure these IDs match exactly -->
+
+        <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+
             <!-- Critical Alerts -->
             <div class="bg-red-50 rounded-lg shadow-md p-4 border-l-4 border-red-500">
                 <div class="flex items-center space-x-4">
@@ -89,7 +90,7 @@
                         </svg>
                     </div>
                     <div>
-                        <p class="text-3xl font-bold text-blue-600" id="activeSensorsCount">1</p>
+                        <p class="text-3xl font-bold text-blue-600" id="activeSensorsCount">0</p>
                         <p class="text-sm text-blue-700 font-medium">Active Sensors</p>
                     </div>
                 </div>
@@ -105,24 +106,24 @@
                         </svg>
                     </div>
                     <div>
-                        <p class="text-3xl font-bold text-slate-600" id="inactiveSectors">5</p>
+                        <p class="text-3xl font-bold text-slate-600" id="inactiveSectors">6</p>
                         <p class="text-sm text-slate-700 font-medium">Inactive Sectors</p>
                     </div>
                 </div>
             </div>
+
         </div>
 
         <!-- Main Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Sensor Data -->
+
+            <!-- Live Sensor Readings -->
             <div class="lg:col-span-2 bg-white rounded-lg shadow-lg p-6">
                 <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
                     <span class="w-2 h-8 bg-indigo-600 rounded mr-3"></span>
                     Live Sensor Readings
                 </h2>
-                <div id="sensorGrid">
-                    <!-- Only Sector 1 will be displayed here -->
-                </div>
+                <div id="sensorGrid"></div>
             </div>
 
             <!-- Mine Sector Overview -->
@@ -132,7 +133,7 @@
                     Mine Sector Overview
                 </h2>
 
-                <!-- Status Legend -->
+                <!-- Legend -->
                 <div class="mb-4 flex items-center justify-end space-x-4 text-xs">
                     <div class="flex items-center">
                         <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
@@ -156,17 +157,15 @@
                 <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg p-8">
                     <div class="max-w-2xl mx-auto">
                         <h3 class="text-white font-semibold mb-6 text-center text-lg">Mine Layout - Live Status</h3>
-
-                        <!-- Sector Grid -->
                         <div class="grid grid-cols-3 gap-6">
+
                             <!-- Sector 1 -->
                             <div class="flex flex-col items-center">
                                 <div class="text-slate-400 text-sm mb-2 font-medium">Sector 1</div>
                                 <div id="sector-status-1"
-                                    class="w-20 h-20 rounded-full bg-green-500 shadow-lg flex items-center justify-center text-white transform transition-all duration-300 hover:scale-110 cursor-pointer">
+                                    class="w-20 h-20 rounded-full bg-slate-600 shadow-lg flex items-center justify-center text-white transform transition-all duration-300 hover:scale-110 cursor-pointer opacity-50">
                                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M5 13l4 4L19 7" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 </div>
                                 <div class="h-8 w-0.5 bg-slate-600 my-2"></div>
@@ -176,10 +175,9 @@
                             <div class="flex flex-col items-center">
                                 <div class="text-slate-400 text-sm mb-2 font-medium">Sector 2</div>
                                 <div id="sector-status-2"
-                                    class="w-20 h-20 rounded-full bg-slate-600 shadow-lg flex items-center justify-center text-white transform transition-all duration-300 hover:scale-110 cursor-pointer">
+                                    class="w-20 h-20 rounded-full bg-slate-600 shadow-lg flex items-center justify-center text-white transform transition-all duration-300 hover:scale-110 cursor-pointer opacity-50">
                                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M6 18L18 6M6 6l12 12" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 </div>
                                 <div class="h-8 w-0.5 bg-slate-600 my-2"></div>
@@ -189,16 +187,15 @@
                             <div class="flex flex-col items-center">
                                 <div class="text-slate-400 text-sm mb-2 font-medium">Sector 3</div>
                                 <div id="sector-status-3"
-                                    class="w-20 h-20 rounded-full bg-slate-600 shadow-lg flex items-center justify-center text-white transform transition-all duration-300 hover:scale-110 cursor-pointer">
+                                    class="w-20 h-20 rounded-full bg-slate-600 shadow-lg flex items-center justify-center text-white transform transition-all duration-300 hover:scale-110 cursor-pointer opacity-50">
                                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M6 18L18 6M6 6l12 12" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 </div>
                                 <div class="h-8 w-0.5 bg-slate-600 my-2"></div>
                             </div>
 
-                            <!-- Horizontal connector line -->
+                            <!-- Horizontal connector -->
                             <div class="col-span-3 -my-4">
                                 <div class="h-0.5 bg-slate-600 w-full"></div>
                             </div>
@@ -207,10 +204,9 @@
                             <div class="flex flex-col items-center">
                                 <div class="h-8 w-0.5 bg-slate-600 mb-2"></div>
                                 <div id="sector-status-4"
-                                    class="w-20 h-20 rounded-full bg-slate-600 shadow-lg flex items-center justify-center text-white transform transition-all duration-300 hover:scale-110 cursor-pointer">
+                                    class="w-20 h-20 rounded-full bg-slate-600 shadow-lg flex items-center justify-center text-white transform transition-all duration-300 hover:scale-110 cursor-pointer opacity-50">
                                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M6 18L18 6M6 6l12 12" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 </div>
                                 <div class="text-slate-400 text-sm mt-2 font-medium">Sector 4</div>
@@ -220,10 +216,9 @@
                             <div class="flex flex-col items-center">
                                 <div class="h-8 w-0.5 bg-slate-600 mb-2"></div>
                                 <div id="sector-status-5"
-                                    class="w-20 h-20 rounded-full bg-slate-600 shadow-lg flex items-center justify-center text-white transform transition-all duration-300 hover:scale-110 cursor-pointer">
+                                    class="w-20 h-20 rounded-full bg-slate-600 shadow-lg flex items-center justify-center text-white transform transition-all duration-300 hover:scale-110 cursor-pointer opacity-50">
                                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M6 18L18 6M6 6l12 12" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 </div>
                                 <div class="text-slate-400 text-sm mt-2 font-medium">Sector 5</div>
@@ -233,425 +228,411 @@
                             <div class="flex flex-col items-center">
                                 <div class="h-8 w-0.5 bg-slate-600 mb-2"></div>
                                 <div id="sector-status-6"
-                                    class="w-20 h-20 rounded-full bg-slate-600 shadow-lg flex items-center justify-center text-white transform transition-all duration-300 hover:scale-110 cursor-pointer">
+                                    class="w-20 h-20 rounded-full bg-slate-600 shadow-lg flex items-center justify-center text-white transform transition-all duration-300 hover:scale-110 cursor-pointer opacity-50">
                                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M6 18L18 6M6 6l12 12" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 </div>
                                 <div class="text-slate-400 text-sm mt-2 font-medium">Sector 6</div>
                             </div>
+
                         </div>
                     </div>
                 </div>
             </div>
 
-
-        </div>
         </div>
 
-        <!-- AI Predictions -->
-<div class="mt-6 bg-white rounded-lg shadow-lg p-6">
-    <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-slate-800 flex items-center">
-            <span class="w-2 h-8 bg-purple-600 rounded mr-3"></span>
-            AI Predictions & Risk Analysis
-        </h2>
-        <div class="flex items-center space-x-2">
-            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span class="text-xs text-slate-500" id="modelLabel">ML Model Active</span>
-        </div>
-    </div>
-
-    <!-- ML Model Confidence Panel -->
-    <div id="mlConfidencePanel" class="mb-6 bg-slate-50 rounded-lg p-4 border border-slate-200 hidden">
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-bold text-slate-700">Model Confidence &amp; Probability Breakdown</h3>
-            <span id="ciLabel" class="text-xs text-slate-500 bg-white px-2 py-1 rounded border border-slate-200"></span>
-        </div>
-
-        <!-- Overall confidence bar -->
-        <div class="mb-4">
-            <div class="flex justify-between text-xs text-slate-500 mb-1">
-                <span>Prediction Confidence</span>
-                <span id="confidencePct" class="font-bold text-slate-700"></span>
-            </div>
-            <div class="w-full bg-slate-200 rounded-full h-3">
-                <div id="confidenceBar"
-                    class="h-3 rounded-full transition-all duration-700"
-                    style="width: 0%"></div>
-            </div>
-        </div>
-
-        <!-- 3-class probability breakdown -->
-        <div class="grid grid-cols-3 gap-3">
-            <!-- Normal -->
-            <div class="bg-white rounded-lg p-3 border border-green-200">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-semibold text-green-700">SAFE</span>
-                    <span id="probNormal" class="text-sm font-bold text-green-600">--%</span>
-                </div>
-                <div class="w-full bg-green-100 rounded-full h-2">
-                    <div id="barNormal" class="bg-green-500 h-2 rounded-full transition-all duration-700" style="width:0%"></div>
+        <!-- AI Predictions & Risk Analysis -->
+        <div class="mt-6 bg-white rounded-lg shadow-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-slate-800 flex items-center">
+                    <span class="w-2 h-8 bg-purple-600 rounded mr-3"></span>
+                    AI Predictions &amp; Risk Analysis
+                </h2>
+                <div class="flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-xs text-slate-500" id="modelLabel">ML Model Active</span>
                 </div>
             </div>
-            <!-- Warning -->
-            <div class="bg-white rounded-lg p-3 border border-amber-200">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-semibold text-amber-700">CAUTION</span>
-                    <span id="probWarning" class="text-sm font-bold text-amber-600">--%</span>
-                </div>
-                <div class="w-full bg-amber-100 rounded-full h-2">
-                    <div id="barWarning" class="bg-amber-500 h-2 rounded-full transition-all duration-700" style="width:0%"></div>
-                </div>
-            </div>
-            <!-- Critical -->
-            <div class="bg-white rounded-lg p-3 border border-red-200">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-semibold text-red-700">DANGER</span>
-                    <span id="probCritical" class="text-sm font-bold text-red-600">--%</span>
-                </div>
-                <div class="w-full bg-red-100 rounded-full h-2">
-                    <div id="barCritical" class="bg-red-500 h-2 rounded-full transition-all duration-700" style="width:0%"></div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Predictions grid -->
-    <div id="predictionsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="col-span-2 text-center py-8">
-            <div class="animate-spin w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full mx-auto mb-4"></div>
-            <p class="text-slate-500">Loading predictions...</p>
+            <!-- ML Confidence Panel — hidden when offline or no confidence score -->
+            <div id="mlConfidencePanel" class="mb-6 bg-slate-50 rounded-lg p-4 border border-slate-200 hidden">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-bold text-slate-700">Model Confidence &amp; Probability Breakdown</h3>
+                    <span id="ciLabel" class="text-xs text-slate-500 bg-white px-2 py-1 rounded border border-slate-200"></span>
+                </div>
+
+                <!-- Overall confidence bar -->
+                <div class="mb-4">
+                    <div class="flex justify-between text-xs text-slate-500 mb-1">
+                        <span>Prediction Confidence</span>
+                        <span id="confidencePct" class="font-bold text-slate-700"></span>
+                    </div>
+                    <div class="w-full bg-slate-200 rounded-full h-3">
+                        <div id="confidenceBar" class="h-3 rounded-full transition-all duration-700" style="width:0%"></div>
+                    </div>
+                </div>
+
+                <!-- 3-class probability breakdown -->
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="bg-white rounded-lg p-3 border border-green-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-green-700">SAFE</span>
+                            <span id="probNormal" class="text-sm font-bold text-green-600">--%</span>
+                        </div>
+                        <div class="w-full bg-green-100 rounded-full h-2">
+                            <div id="barNormal" class="bg-green-500 h-2 rounded-full transition-all duration-700" style="width:0%"></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 border border-amber-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-amber-700">CAUTION</span>
+                            <span id="probWarning" class="text-sm font-bold text-amber-600">--%</span>
+                        </div>
+                        <div class="w-full bg-amber-100 rounded-full h-2">
+                            <div id="barWarning" class="bg-amber-500 h-2 rounded-full transition-all duration-700" style="width:0%"></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 border border-red-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-red-700">DANGER</span>
+                            <span id="probCritical" class="text-sm font-bold text-red-600">--%</span>
+                        </div>
+                        <div class="w-full bg-red-100 rounded-full h-2">
+                            <div id="barCritical" class="bg-red-500 h-2 rounded-full transition-all duration-700" style="width:0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Predictions grid -->
+            <div id="predictionsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="col-span-2 text-center py-8">
+                    <div class="animate-spin w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full mx-auto mb-4"></div>
+                    <p class="text-slate-500">Loading predictions...</p>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
+
     </main>
 
-    <!-- COMPLETE FIXED JAVASCRIPT SECTION -->
-
+    <!-- ═══════════════════════ JAVASCRIPT ═══════════════════════ -->
     <script>
         let updateInterval;
 
+        // ── Fetch sensor data ──────────────────────────────────────
         async function fetchSensorData() {
-    try {
-        const response = await fetch('/api/sensor-data/');
-        const data = await response.json();
-        const online = data.system_online === true;
-        updateSensorDisplay(data.sensors, online);
-        updateStatsCards(data.sensors, online);
-        if (typeof updateMineMapStatus === 'function') {
-            updateMineMapStatus(data.sensors, online);
+            try {
+                const response = await fetch('/api/sensor-data/');
+                const data     = await response.json();
+                const online   = data.system_online === true;
+                updateSensorDisplay(data.sensors, online);
+                updateStatsCards(data.sensors, online);
+                updateMineMapStatus(data.sensors, online);
+            } catch (error) {
+                console.error('Error fetching sensor data:', error);
+            }
         }
-    } catch (error) {
-        console.error('Error fetching sensor data:', error);
-    }
-}
 
+        // ── Fetch predictions — fully defensive ───────────────────
         async function fetchPredictions() {
-    try {
-        const response = await fetch('/api/predictions/');
-        const data = await response.json();
-        updatePredictionsDisplay(data.predictions, data.system_online);
-        updateMLConfidencePanel(data.mlMeta);
-        updateStatsFromPredictions(data.predictions);
-    } catch (error) {
-        console.error('Error fetching predictions:', error);
-    }
-}
+            try {
+                const response = await fetch('/api/predictions/');
+                const data     = await response.json();
 
-function updateMLConfidencePanel(meta) {
-    const panel = document.getElementById('mlConfidencePanel');
-    if (!meta || meta.confidence === null || meta.confidence === undefined) {
-        panel.classList.add('hidden');
-        return;
-    }
+                const predictions  = data.predictions  || [];
+                const systemOnline = data.system_online === true;
+                const mlMeta       = data.mlMeta        || null;
 
-    panel.classList.remove('hidden');
+                updatePredictionsDisplay(predictions, systemOnline);
+                updateMLConfidencePanel(mlMeta);
+                updateStatsFromPredictions(predictions);
 
-    const conf       = meta.confidence;
-    const probN      = meta.probNormal   ?? 0;
-    const probW      = meta.probWarning  ?? 0;
-    const probC      = meta.probCritical ?? 0;
-    const ciLower    = meta.ciLower;
-    const ciUpper    = meta.ciUpper;
-
-    // Confidence bar colour: green ≥80, amber ≥60, red <60
-    const barColor = conf >= 80 ? 'bg-green-500' : conf >= 60 ? 'bg-amber-500' : 'bg-red-500';
-    const bar = document.getElementById('confidenceBar');
-    bar.style.width = `${conf}%`;
-    bar.className   = `h-3 rounded-full transition-all duration-700 ${barColor}`;
-
-    document.getElementById('confidencePct').textContent = `${conf}%`;
-
-    // CI label
-    const ciEl = document.getElementById('ciLabel');
-    if (ciLower !== null && ciUpper !== null) {
-        ciEl.textContent = `95% CI: ${ciLower}% – ${ciUpper}%`;
-    } else {
-        ciEl.textContent = meta.modelUsed || '';
-    }
-
-    // Class probability bars
-    document.getElementById('probNormal').textContent   = `${probN}%`;
-    document.getElementById('probWarning').textContent  = `${probW}%`;
-    document.getElementById('probCritical').textContent = `${probC}%`;
-    document.getElementById('barNormal').style.width   = `${probN}%`;
-    document.getElementById('barWarning').style.width  = `${probW}%`;
-    document.getElementById('barCritical').style.width = `${probC}%`;
-
-    document.getElementById('modelLabel').textContent =
-        `${meta.modelUsed} · ${conf}% confident`;
-}
-
-        function updateSensorDisplay(sensors, systemOnline) {
-    const grid = document.getElementById('sensorGrid');
-
-    if (!systemOnline) {
-        grid.innerHTML = `
-            <div class="border-2 border-slate-300 bg-slate-50 rounded-lg p-10 flex flex-col items-center justify-center opacity-60">
-                <svg class="w-16 h-16 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-                </svg>
-                <h3 class="text-xl font-bold text-slate-500">System Offline</h3>
-                <p class="text-sm text-slate-400 mt-2">No hardware connected. Waiting for ESP32 on COM9...</p>
-                <div class="mt-4 flex items-center space-x-2">
-                    <div class="w-2 h-2 bg-slate-400 rounded-full animate-pulse"></div>
-                    <span class="text-xs text-slate-400">Retrying connection every 5s</span>
-                </div>
-            </div>
-        `;
-        document.getElementById('lastUpdate').textContent = '--:--:--';
-        return;
-    }
-
-    const activeSensor = sensors.find(sensor => sensor.isActive) || sensors[0];
-    const coColor   = activeSensor.carbonMonoxide > 100 ? 'red' 
-                    : activeSensor.carbonMonoxide > 35  ? 'amber' : 'green';
-    const tempColor = activeSensor.temperature > 35 ? 'red' 
-                    : activeSensor.temperature > 26 ? 'amber' : 'green';
-
-    grid.innerHTML = `
-        <div class="border-2 border-green-500 bg-green-50 rounded-lg p-6">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-bold text-slate-800">${activeSensor.sector}</h3>
-                        <p class="text-sm text-slate-500">Active Monitoring Zone</p>
-                    </div>
-                </div>
-                <span class="px-3 py-1.5 rounded-full text-sm font-semibold bg-green-100 text-green-700 border-2 border-green-300">
-                    ● ACTIVE
-                </span>
-            </div>
-            <div class="grid grid-cols-2 gap-6 mt-6">
-                <div class="bg-white rounded-lg p-4 border-2 border-${coColor}-200">
-                    <div class="flex items-center space-x-2 mb-2">
-                        <span class="text-sm font-medium text-slate-600">CO Level</span>
-                    </div>
-                    <p class="text-3xl font-bold text-${coColor}-600">${activeSensor.carbonMonoxide.toFixed(1)}</p>
-                    <p class="text-sm text-slate-500 mt-1">ppm (parts per million)</p>
-                    <div class="mt-3 flex items-center">
-                        <div class="flex-1 bg-slate-200 rounded-full h-2 overflow-hidden">
-                            <div class="bg-${coColor}-500 h-full rounded-full transition-all duration-500"
-                                style="width: ${Math.min((activeSensor.carbonMonoxide / 100) * 100, 100)}%"></div>
-                        </div>
-                        <span class="ml-2 text-xs text-slate-500">${Math.min((activeSensor.carbonMonoxide / 100) * 100, 100).toFixed(0)}%</span>
-                    </div>
-                </div>
-                <div class="bg-white rounded-lg p-4 border-2 border-${tempColor}-200">
-                    <div class="flex items-center space-x-2 mb-2">
-                        <span class="text-sm font-medium text-slate-600">Temperature</span>
-                    </div>
-                    <p class="text-3xl font-bold text-${tempColor}-600">${activeSensor.temperature.toFixed(1)}</p>
-                    <p class="text-sm text-slate-500 mt-1">°C (Celsius)</p>
-                    <div class="mt-3 flex items-center">
-                        <div class="flex-1 bg-slate-200 rounded-full h-2 overflow-hidden">
-                            <div class="bg-${tempColor}-500 h-full rounded-full transition-all duration-500"
-                                style="width: ${Math.min((activeSensor.temperature / 50) * 100, 100)}%"></div>
-                        </div>
-                        <span class="ml-2 text-xs text-slate-500">${Math.min((activeSensor.temperature / 50) * 100, 100).toFixed(0)}%</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
-}
-
-function updateStatsCards(sensors, systemOnline) {
-    if (!systemOnline) {
-        document.getElementById('criticalAlerts').textContent  = '0';
-        document.getElementById('warningAlerts').textContent   = '0';
-        document.getElementById('activeSensorsCount').textContent = '0';
-        document.getElementById('inactiveSectors').textContent = '6';
-        return;
-    }
-
-    let criticalCount = 0, warningCount = 0, activeCount = 0, inactiveCount = 0;
-    sensors.forEach(sensor => {
-        if (sensor.isActive) {
-            activeCount++;
-            if (sensor.carbonMonoxide > 100 || sensor.temperature > 35) criticalCount++;
-            else if (sensor.carbonMonoxide > 35 || sensor.temperature > 26) warningCount++;
-        } else {
-            inactiveCount++;
+            } catch (error) {
+                console.error('Error fetching predictions:', error);
+                // Fail gracefully — show offline/empty state
+                updatePredictionsDisplay([], false);
+                updateMLConfidencePanel(null);
+            }
         }
-    });
 
-    document.getElementById('criticalAlerts').textContent     = criticalCount;
-    document.getElementById('warningAlerts').textContent      = warningCount;
-    document.getElementById('activeSensorsCount').textContent = activeCount;
-    document.getElementById('inactiveSectors').textContent    = inactiveCount;
-}
+        // ── ML Confidence Panel ────────────────────────────────────
+        function updateMLConfidencePanel(meta) {
+            const panel = document.getElementById('mlConfidencePanel');
 
-        function updateStatsFromPredictions(predictions) {
-            // Count predictions by severity
-            let criticalPredictions = 0;
-            let warningPredictions = 0;
+            // Hide panel when offline, no meta, or no confidence score
+            if (!meta || meta.confidence === null || meta.confidence === undefined) {
+                panel.classList.add('hidden');
+                document.getElementById('modelLabel').textContent = 'ML Model Active';
+                return;
+            }
 
-            predictions.forEach(pred => {
-                if (pred.severity === 'critical') {
-                    criticalPredictions++;
-                } else if (pred.severity === 'warning') {
-                    warningPredictions++;
+            panel.classList.remove('hidden');
+
+            const conf  = meta.confidence;
+            const probN = meta.probNormal   ?? 0;
+            const probW = meta.probWarning  ?? 0;
+            const probC = meta.probCritical ?? 0;
+
+            // Colour confidence bar
+            const barColor = conf >= 80 ? 'bg-green-500'
+                           : conf >= 60 ? 'bg-amber-500'
+                           : 'bg-red-500';
+            const bar = document.getElementById('confidenceBar');
+            bar.style.width = `${conf}%`;
+            bar.className   = `h-3 rounded-full transition-all duration-700 ${barColor}`;
+            document.getElementById('confidencePct').textContent = `${conf}%`;
+
+            // CI label
+            const ciEl = document.getElementById('ciLabel');
+            ciEl.textContent = (meta.ciLower !== null && meta.ciUpper !== null)
+                ? `95% CI: ${meta.ciLower}% – ${meta.ciUpper}%`
+                : (meta.modelUsed || '');
+
+            // Class probability bars
+            document.getElementById('probNormal').textContent  = `${probN}%`;
+            document.getElementById('probWarning').textContent = `${probW}%`;
+            document.getElementById('probCritical').textContent = `${probC}%`;
+            document.getElementById('barNormal').style.width   = `${probN}%`;
+            document.getElementById('barWarning').style.width  = `${probW}%`;
+            document.getElementById('barCritical').style.width = `${probC}%`;
+
+            document.getElementById('modelLabel').textContent =
+                `${meta.modelUsed} · ${conf}% confident`;
+        }
+
+        // ── Sensor display ─────────────────────────────────────────
+        function updateSensorDisplay(sensors, systemOnline) {
+            const grid = document.getElementById('sensorGrid');
+
+            if (!systemOnline) {
+                grid.innerHTML = `
+                    <div class="border-2 border-slate-300 bg-slate-50 rounded-lg p-10 flex flex-col items-center justify-center opacity-60">
+                        <svg class="w-16 h-16 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                        </svg>
+                        <h3 class="text-xl font-bold text-slate-500">System Offline</h3>
+                        <p class="text-sm text-slate-400 mt-2">No hardware connected. Waiting for ESP32 on COM9...</p>
+                        <div class="mt-4 flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-slate-400 rounded-full animate-pulse"></div>
+                            <span class="text-xs text-slate-400">Retrying connection every 5s</span>
+                        </div>
+                    </div>`;
+                document.getElementById('lastUpdate').textContent = '--:--:--';
+                return;
+            }
+
+            const s        = sensors.find(s => s.isActive) || sensors[0];
+            const coColor  = s.carbonMonoxide > 100 ? 'red'  : s.carbonMonoxide > 35 ? 'amber' : 'green';
+            const tmpColor = s.temperature    > 35  ? 'red'  : s.temperature    > 26 ? 'amber' : 'green';
+            const coBar    = Math.min((s.carbonMonoxide / 150) * 100, 100).toFixed(0);
+            const tmpBar   = Math.min((s.temperature   / 50)  * 100, 100).toFixed(0);
+
+            grid.innerHTML = `
+                <div class="border-2 border-green-500 bg-green-50 rounded-lg p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800">${s.sector}</h3>
+                                <p class="text-sm text-slate-500">Active Monitoring Zone</p>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1.5 rounded-full text-sm font-semibold bg-green-100 text-green-700 border-2 border-green-300">
+                            ● ACTIVE
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-6 mt-6">
+                        <div class="bg-white rounded-lg p-4 border-2 border-${coColor}-200">
+                            <span class="text-sm font-medium text-slate-600">CO Level</span>
+                            <p class="text-3xl font-bold text-${coColor}-600 mt-1">${s.carbonMonoxide.toFixed(1)}</p>
+                            <p class="text-sm text-slate-500">ppm (parts per million)</p>
+                            <div class="mt-3 flex items-center">
+                                <div class="flex-1 bg-slate-200 rounded-full h-2 overflow-hidden">
+                                    <div class="bg-${coColor}-500 h-full rounded-full transition-all duration-500" style="width:${coBar}%"></div>
+                                </div>
+                                <span class="ml-2 text-xs text-slate-500">${coBar}%</span>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 border-2 border-${tmpColor}-200">
+                            <span class="text-sm font-medium text-slate-600">Temperature</span>
+                            <p class="text-3xl font-bold text-${tmpColor}-600 mt-1">${s.temperature.toFixed(1)}</p>
+                            <p class="text-sm text-slate-500">°C (Celsius)</p>
+                            <div class="mt-3 flex items-center">
+                                <div class="flex-1 bg-slate-200 rounded-full h-2 overflow-hidden">
+                                    <div class="bg-${tmpColor}-500 h-full rounded-full transition-all duration-500" style="width:${tmpBar}%"></div>
+                                </div>
+                                <span class="ml-2 text-xs text-slate-500">${tmpBar}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        }
+
+        // ── Stats cards ────────────────────────────────────────────
+        function updateStatsCards(sensors, systemOnline) {
+            if (!systemOnline) {
+                document.getElementById('criticalAlerts').textContent     = '0';
+                document.getElementById('warningAlerts').textContent      = '0';
+                document.getElementById('activeSensorsCount').textContent = '0';
+                document.getElementById('inactiveSectors').textContent    = '6';
+                return;
+            }
+
+            let critical = 0, warning = 0, active = 0, inactive = 0;
+            sensors.forEach(s => {
+                if (s.isActive) {
+                    active++;
+                    if (s.carbonMonoxide > 100 || s.temperature > 35) critical++;
+                    else if (s.carbonMonoxide > 35 || s.temperature > 26) warning++;
+                } else {
+                    inactive++;
                 }
             });
 
-            // Update prediction count
-            const predCountEl = document.getElementById('predictionCount');
-            if (predCountEl) {
-                predCountEl.textContent = predictions.length;
-            }
+            document.getElementById('criticalAlerts').textContent     = critical;
+            document.getElementById('warningAlerts').textContent      = warning;
+            document.getElementById('activeSensorsCount').textContent = active;
+            document.getElementById('inactiveSectors').textContent    = inactive;
+        }
 
-            // Add to critical/warning counts if predictions exist
+        // ── Stats from predictions — guarded ──────────────────────
+        function updateStatsFromPredictions(predictions) {
+            if (!predictions || predictions.length === 0) return;
+
+            let criticalCount = 0, warningCount = 0;
+            predictions.forEach(pred => {
+                if (pred.severity === 'critical')     criticalCount++;
+                else if (pred.severity === 'warning') warningCount++;
+            });
+
             const criticalEl = document.getElementById('criticalAlerts');
-            const warningEl = document.getElementById('warningAlerts');
+            const warningEl  = document.getElementById('warningAlerts');
 
-            if (criticalEl && criticalPredictions > 0) {
-                const currentCritical = parseInt(criticalEl.textContent) || 0;
-                criticalEl.textContent = Math.max(currentCritical, criticalPredictions);
+            if (criticalEl && criticalCount > 0) {
+                const current = parseInt(criticalEl.textContent) || 0;
+                criticalEl.textContent = Math.max(current, criticalCount);
             }
-
-            if (warningEl && warningPredictions > 0) {
-                const currentWarning = parseInt(warningEl.textContent) || 0;
-                warningEl.textContent = Math.max(currentWarning, warningPredictions);
+            if (warningEl && warningCount > 0) {
+                const current = parseInt(warningEl.textContent) || 0;
+                warningEl.textContent = Math.max(current, warningCount);
             }
         }
 
+        // ── Predictions display ────────────────────────────────────
         function updatePredictionsDisplay(predictions, systemOnline) {
-    const grid = document.getElementById('predictionsGrid');
+            const grid = document.getElementById('predictionsGrid');
 
-    if (!systemOnline || !predictions || predictions.length === 0) {
-        grid.innerHTML = `
-            <div class="col-span-2 text-center py-8 text-slate-500">
-                <svg class="w-16 h-16 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <p class="text-lg font-semibold">
-                    ${!systemOnline ? 'System Offline' : 'No Critical Predictions'}
-                </p>
-                <p class="text-sm">
-                    ${!systemOnline ? 'Connect hardware to enable predictions.' : 'All sensors operating within normal parameters.'}
-                </p>
-            </div>`;
-        return;
-    }
+            if (!systemOnline || !predictions || predictions.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-2 text-center py-8 text-slate-500">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="text-lg font-semibold">
+                            ${!systemOnline ? 'System Offline' : 'No Critical Predictions'}
+                        </p>
+                        <p class="text-sm">
+                            ${!systemOnline
+                                ? 'Connect hardware to enable predictions.'
+                                : 'All sensors operating within normal parameters.'}
+                        </p>
+                    </div>`;
+                return;
+            }
 
-    grid.innerHTML = predictions.map(pred => {
-        const sc   = pred.severity === 'critical' ? 'red' : pred.severity === 'warning' ? 'amber' : 'green';
-        const unit = pred.gasType === 'Temperature' ? '°C' : 'ppm';
-        const icon = pred.severity === 'critical'
-            ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>'
-            : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>';
+            grid.innerHTML = predictions.map(pred => {
+                const sc   = pred.severity === 'critical' ? 'red'
+                           : pred.severity === 'warning'  ? 'amber' : 'green';
+                const unit = pred.gasType === 'Temperature' ? '°C' : 'ppm';
+                const icon = pred.severity === 'critical'
+                    ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>'
+                    : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>';
 
-        return `
-        <div class="border-l-4 border-${sc}-500 bg-${sc}-50 rounded-lg p-4 shadow-md">
-            <div class="flex items-start justify-between mb-2">
-                <div class="flex items-center space-x-2">
-                    <svg class="w-5 h-5 text-${sc}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">${icon}</svg>
-                    <div>
-                        <h4 class="font-semibold text-slate-800">${pred.gasType}</h4>
-                        <p class="text-xs text-slate-500">${pred.sector}</p>
+                return `
+                <div class="border-l-4 border-${sc}-500 bg-${sc}-50 rounded-lg p-4 shadow-md">
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-5 h-5 text-${sc}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">${icon}</svg>
+                            <div>
+                                <h4 class="font-semibold text-slate-800">${pred.gasType}</h4>
+                                <p class="text-xs text-slate-500">${pred.sector}</p>
+                            </div>
+                        </div>
+                        <span class="px-2 py-1 rounded-full text-xs font-bold bg-${sc}-100 text-${sc}-700 uppercase">
+                            ${pred.severity}
+                        </span>
                     </div>
-                </div>
-                <span class="px-2 py-1 rounded-full text-xs font-bold bg-${sc}-100 text-${sc}-700 uppercase">
-                    ${pred.severity}
-                </span>
-            </div>
-            <div class="space-y-1 mb-3 text-sm">
-                <div class="flex justify-between">
-                    <span class="text-slate-600">Current:</span>
-                    <span class="font-semibold">${pred.currentLevel.toFixed(1)} ${unit}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-slate-600">Predicted (15 min):</span>
-                    <span class="font-semibold text-${sc}-600">${pred.predictedLevel.toFixed(1)} ${unit}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-slate-600">Time to threshold:</span>
-                    <span class="font-semibold">${pred.timeToReach} min</span>
-                </div>
-            </div>
-            <div class="bg-white rounded p-2 border border-${sc}-200 mb-2">
-                <p class="text-xs text-slate-700">${pred.recommendation}</p>
-            </div>
-        </div>`;
-    }).join('');
-}
-
-        function updateMineMapStatus(sensors, systemOnline) {
-    sensors.forEach((sensor, index) => {
-        const sectorNum = index + 1;
-        const sectorElement = document.getElementById(`sector-status-${sectorNum}`);
-        if (!sectorElement) return;
-
-        // Offline or inactive — always show X
-        if (!systemOnline || !sensor.isActive) {
-            sectorElement.className = 'w-20 h-20 rounded-full bg-slate-600 shadow-lg flex items-center justify-center text-white transform transition-all duration-300 hover:scale-110 cursor-pointer opacity-50';
-            sectorElement.innerHTML = '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
-            sectorElement.title = systemOnline ? 'Sensor Inactive' : 'System Offline';
-            return;
+                    <div class="space-y-1 mb-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-slate-600">Current:</span>
+                            <span class="font-semibold">${pred.currentLevel.toFixed(1)} ${unit}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-600">Predicted (15 min):</span>
+                            <span class="font-semibold text-${sc}-600">${pred.predictedLevel.toFixed(1)} ${unit}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-600">Time to threshold:</span>
+                            <span class="font-semibold">${pred.timeToReach} min</span>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded p-2 border border-${sc}-200">
+                        <p class="text-xs text-slate-700">${pred.recommendation}</p>
+                    </div>
+                </div>`;
+            }).join('');
         }
 
-        // Online and active — show status colour
-        let statusColor = 'bg-green-500';
-        let iconHTML = '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+        // ── Mine map status ────────────────────────────────────────
+        function updateMineMapStatus(sensors, systemOnline) {
+            sensors.forEach((sensor, index) => {
+                const el = document.getElementById(`sector-status-${index + 1}`);
+                if (!el) return;
 
-        if (sensor.carbonMonoxide > 100 || sensor.temperature > 35) {
-    statusColor = 'bg-red-500 animate-pulse';
-} else if (sensor.carbonMonoxide > 35 || sensor.temperature > 26) {
-    statusColor = 'bg-amber-500';
-}
+                if (!systemOnline || !sensor.isActive) {
+                    el.className = 'w-20 h-20 rounded-full bg-slate-600 shadow-lg flex items-center justify-center text-white transform transition-all duration-300 hover:scale-110 cursor-pointer opacity-50';
+                    el.innerHTML = '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+                    el.title     = systemOnline ? 'Sensor Inactive' : 'System Offline';
+                    return;
+                }
 
-        sectorElement.className = `w-20 h-20 rounded-full ${statusColor} shadow-lg flex items-center justify-center text-white transform transition-all duration-300 hover:scale-110 cursor-pointer`;
-        sectorElement.innerHTML = iconHTML;
-        sectorElement.title = `CO: ${sensor.carbonMonoxide.toFixed(1)} ppm\nTemp: ${sensor.temperature.toFixed(1)} °C`;
-    });
-}
+                let color = 'bg-green-500';
+                let icon  = '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
 
+                if (sensor.carbonMonoxide > 100 || sensor.temperature > 35) {
+                    color = 'bg-red-500 animate-pulse';
+                    icon  = '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
+                } else if (sensor.carbonMonoxide > 35 || sensor.temperature > 26) {
+                    color = 'bg-amber-500';
+                    icon  = '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+                }
+
+                el.className = `w-20 h-20 rounded-full ${color} shadow-lg flex items-center justify-center text-white transform transition-all duration-300 hover:scale-110 cursor-pointer`;
+                el.innerHTML = icon;
+                el.title     = `CO: ${sensor.carbonMonoxide.toFixed(1)} ppm | Temp: ${sensor.temperature.toFixed(1)} °C`;
+            });
+        }
+
+        // ── Auto-update ────────────────────────────────────────────
         function startAutoUpdate() {
-            // Initial fetch
             fetchSensorData();
             fetchPredictions();
-
-            // Update every 5 seconds
             updateInterval = setInterval(() => {
                 fetchSensorData();
                 fetchPredictions();
             }, 5000);
         }
 
-        // Initialize on page load
         document.addEventListener('DOMContentLoaded', startAutoUpdate);
     </script>
 </body>
-
 </html>

@@ -3,27 +3,20 @@ import threading
 import serial
 import serial.tools.list_ports
 from datetime import datetime, timedelta
-from collections import deque
+from collections import deque, defaultdict
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from .models import SensorReading, Sector, Prediction, Alert
 
-
 # ── Prediction save cooldown ───────────────────────────────────
-# Prevents flooding the Prediction table — saves only when
-# risk level changes OR every 5 minutes, whichever comes first
-from collections import defaultdict
+# Saves only when risk level changes OR every 5 minutes
+_last_prediction_save = defaultdict(lambda: {'time': None, 'risk': None})
+PREDICTION_SAVE_COOLDOWN = 300  # seconds
 
-_last_prediction_save = defaultdict(lambda: {
-    'time': None,
-    'risk': None,
-})
-PREDICTION_SAVE_COOLDOWN = 300  # seconds (5 minutes)
-# Import your ML predictor and alert system
+# ── ML predictor ───────────────────────────────────────────────
 try:
     from .ml_predictor import predictor
     ML_AVAILABLE = True
@@ -31,6 +24,7 @@ except Exception as e:
     print(f"ML predictor not available: {e}")
     ML_AVAILABLE = False
 
+# ── Alert system ───────────────────────────────────────────────
 try:
     from .alerts import alert_system
     ALERTS_AVAILABLE = True
@@ -43,34 +37,28 @@ except Exception as e:
 # DATABASE HELPER
 # ============================================================
 
-def _save_to_database(reading_dict):  # sourcery skip: extract-method
-    """
-    Save sensor reading to PostgreSQL database.
-    """
+def _save_to_database(reading_dict):
+    """Save sensor reading to PostgreSQL database."""
     try:
-        # Get or create the sector
         sector, created = Sector.objects.get_or_create(
             name=reading_dict["sector"],
             defaults={"description": "Auto-created from sensor data"}
         )
-        
         if created:
             print(f"✅ Created new sector: {sector.name}")
-        
-        # Create sensor reading
+
         SensorReading.objects.create(
             sector=sector,
             carbon_monoxide=reading_dict["carbon_monoxide"],
             temperature=reading_dict["temperature"],
         )
-        
-        # Optional: Clean old data (keep only last 7 days)
+
+        # Keep only last 7 days
         cutoff = timezone.now() - timedelta(days=7)
         deleted_count, _ = SensorReading.objects.filter(timestamp__lt=cutoff).delete()
-        
         if deleted_count > 0:
             print(f"🗑️ Cleaned {deleted_count} old readings")
-            
+
     except Exception as e:
         print(f"❌ Database save error: {e}")
         import traceback
@@ -78,15 +66,14 @@ def _save_to_database(reading_dict):  # sourcery skip: extract-method
 
 
 # ============================================================
-# SERIAL READER - Runs in background thread
+# SERIAL READER — Runs in background thread
 # ============================================================
 
 class SerialDataManager:
     SERIAL_PORT = "COM9"
     BAUD_RATE   = 115200
     TIMEOUT     = 3
-
-    MAX_HISTORY = 17280  # 24 hours at 5s intervals
+    MAX_HISTORY = 17280  # 24h at 5s intervals
 
     def __init__(self):
         self.latest_reading = None
@@ -157,7 +144,6 @@ class SerialDataManager:
     def _parse_and_store(self, raw_json: str):
         try:
             data = json.loads(raw_json)
-
             reading = {
                 "sector":          data.get("sector", "Sector 1"),
                 "temperature":     float(data.get("temperature", 0)),
@@ -165,7 +151,6 @@ class SerialDataManager:
                 "timestamp":       datetime.now().isoformat(),
                 "isActive":        True,
             }
-
             with self.lock:
                 self.latest_reading = reading
                 self.history.append({
@@ -174,17 +159,14 @@ class SerialDataManager:
                     "temperature":    reading["temperature"],
                 })
 
-            # ✨ Save to database
             _save_to_database(reading)
-
-            # Trigger async ML alert check
             _check_and_alert(reading)
 
-        except (json.JSONDecodeError, ValueError) as e:
+        except (json.JSONDecodeError, ValueError):
             pass
 
 
-# Singleton manager + auto-start
+# Singleton — auto-start on import
 serial_manager = SerialDataManager()
 serial_manager.start()
 
@@ -205,7 +187,8 @@ def _check_and_alert(reading):
         risk   = result.get("risk_level", "normal")
 
         if risk in ("warning", "critical"):
-            if co > 30:
+            # MSHA thresholds: CO warning >35, critical >100
+            if co > 35:
                 alert_system.send_prediction_alert(
                     prediction_data={
                         "severity":       risk,
@@ -222,7 +205,8 @@ def _check_and_alert(reading):
                     sector_name=reading["sector"],
                 )
 
-            if temp > 28:
+            # MSHA thresholds: Temp warning >26, critical >35
+            if temp > 26:
                 alert_system.send_prediction_alert(
                     prediction_data={
                         "severity":       risk,
@@ -241,38 +225,6 @@ def _check_and_alert(reading):
 
     except Exception as e:
         print(f"Alert check error: {e}")
-
-
-# ============================================================
-# DEMO / FALLBACK DATA
-# ============================================================
-
-def _demo_sensor():
-    import math, time
-    t = time.time()
-    return {
-        "sector":          "Sector 1",
-        "temperature":     round(25.0 + 3 * math.sin(t / 60), 2),
-        "carbon_monoxide": round(20.0 + 10 * math.sin(t / 45), 1),
-        "timestamp":       datetime.now().isoformat(),
-        "isActive":        True,
-    }
-
-
-def _demo_history(hours=24):
-    import math, random
-    history = []
-    now = datetime.now()
-    points = hours * 12
-
-    for i in range(points):
-        ts = now - timedelta(minutes=(points - i) * 5)
-        history.append({
-            "timestamp":      ts.isoformat(),
-            "carbonMonoxide": round(20 + 10 * math.sin(i / 30) + random.uniform(-2, 2), 1),
-            "temperature":    round(26 + 4 * math.sin(i / 20) + random.uniform(-1, 1), 2),
-        })
-    return history
 
 
 # ============================================================
@@ -301,33 +253,29 @@ def analytics(request):
 @login_required
 @require_http_methods(["GET"])
 def get_sensor_data(request):
-    reading = serial_manager.get_latest()
-    
-    # Check if serial is actually connected
+    reading      = serial_manager.get_latest()
     is_connected = (
         serial_manager.serial_conn is not None
         and serial_manager.serial_conn.is_open
     )
 
     if not is_connected or reading is None:
-        # System offline — all sectors inactive
         sectors = [
             {
-                "sector": f"Sector {i}",
-                "carbonMonoxide": 0,
-                "temperature": 0,
-                "timestamp": datetime.now().isoformat(),
-                "isActive": False,
+                "sector":          f"Sector {i}",
+                "carbonMonoxide":  0,
+                "temperature":     0,
+                "timestamp":       datetime.now().isoformat(),
+                "isActive":        False,
             }
             for i in range(1, 7)
         ]
         return JsonResponse({
-            "sensors": sectors,
-            "timestamp": datetime.now().isoformat(),
+            "sensors":       sectors,
+            "timestamp":     datetime.now().isoformat(),
             "system_online": False,
         })
 
-    # Hardware connected — real data
     sectors = []
     for i in range(1, 7):
         if i == 1:
@@ -353,6 +301,7 @@ def get_sensor_data(request):
         "system_online": True,
     })
 
+
 @login_required
 @require_http_methods(["GET"])
 def get_predictions(request):
@@ -362,63 +311,78 @@ def get_predictions(request):
     )
     reading = serial_manager.get_latest()
 
+    # ── Offline response — includes mlMeta: None so frontend doesn't crash ──
     if not is_connected or reading is None:
         return JsonResponse({
             "predictions":   [],
             "riskLevel":     "offline",
             "modelUsed":     "N/A",
+            "mlMeta":        None,          # ← critical: prevents JS crash
             "timestamp":     datetime.now().isoformat(),
             "system_online": False,
         })
 
-    co     = reading["carbon_monoxide"]
-    temp   = reading["temperature"]
+    co          = reading["carbon_monoxide"]
+    temp        = reading["temperature"]
     sector_name = reading["sector"]
 
+    # ── Run ML prediction ──────────────────────────────────────
     if ML_AVAILABLE:
         try:
             result = predictor.predict_risk(co, temp)
         except Exception as e:
             print(f"⚠️ Prediction error: {e}")
             result = {
-                'risk_level': 'normal', 'confidence': None,
-                'prob_normal': None, 'prob_warning': None, 'prob_critical': None,
-                'ci_lower': None, 'ci_upper': None,
-                'predicted_co': co * 1.15, 'predicted_temp': temp * 1.08,
-                'model_used': 'Rule-based (Fallback)',
+                'risk_level':    'normal',
+                'confidence':    None,
+                'prob_normal':   None,
+                'prob_warning':  None,
+                'prob_critical': None,
+                'ci_lower':      None,
+                'ci_upper':      None,
+                'predicted_co':  co * 1.15,
+                'predicted_temp': temp * 1.08,
+                'model_used':    'Rule-based (Fallback)',
             }
     else:
-        risk = 'critical' if (co > 100 or temp > 35) else 'warning' if (co > 35 or temp > 26) else 'normal'
+        risk = (
+            'critical' if (co > 100 or temp > 35)
+            else 'warning' if (co > 35 or temp > 26)
+            else 'normal'
+        )
         result = {
-            'risk_level': risk, 'confidence': None,
-            'prob_normal': None, 'prob_warning': None, 'prob_critical': None,
-            'ci_lower': None, 'ci_upper': None,
-            'predicted_co': co * 1.15, 'predicted_temp': temp * 1.08,
-            'model_used': 'Rule-based (Fallback)',
+            'risk_level':    risk,
+            'confidence':    None,
+            'prob_normal':   None,
+            'prob_warning':  None,
+            'prob_critical': None,
+            'ci_lower':      None,
+            'ci_upper':      None,
+            'predicted_co':  co * 1.15,
+            'predicted_temp': temp * 1.08,
+            'model_used':    'Rule-based (Fallback)',
         }
 
     risk       = result['risk_level']
     pred_co    = result['predicted_co']
     pred_temp  = result['predicted_temp']
     model_used = result['model_used']
-    confidence = result.get('confidence')
-    ci_lower   = result.get('ci_lower')
-    ci_upper   = result.get('ci_upper')
 
-    # ── Shared ML metadata for frontend ───────────────────
+    # ── Shared ML metadata ─────────────────────────────────────
     ml_meta = {
         "modelUsed":    model_used,
-        "confidence":   confidence,
-        "ciLower":      ci_lower,
-        "ciUpper":      ci_upper,
+        "confidence":   result.get('confidence'),
+        "ciLower":      result.get('ci_lower'),
+        "ciUpper":      result.get('ci_upper'),
         "probNormal":   result.get('prob_normal'),
         "probWarning":  result.get('prob_warning'),
         "probCritical": result.get('prob_critical'),
     }
 
+    # ── Build predictions list ─────────────────────────────────
     predictions = []
 
-    # ── CO prediction ──────────────────────────────────────
+    # CO — MSHA thresholds
     co_severity = 'critical' if co > 100 else 'warning' if co > 35 else 'normal'
     co_rec = (
         "EVACUATE IMMEDIATELY. CO levels dangerously high."
@@ -438,7 +402,7 @@ def get_predictions(request):
         **ml_meta,
     })
 
-    # ── Temperature prediction ─────────────────────────────
+    # Temperature — MSHA thresholds
     temp_severity = 'critical' if temp > 35 else 'warning' if temp > 26 else 'normal'
     temp_rec = (
         "EVACUATE IMMEDIATELY. Temperature critically high."
@@ -458,56 +422,59 @@ def get_predictions(request):
         **ml_meta,
     })
 
-    # ── Save to Prediction model (with cooldown) ──────────────────
-try:
-    sector_obj, _ = Sector.objects.get_or_create(
-        name=sector_name,
-        defaults={"description": "Auto-created"}
-    )
+    # ── Save to Prediction model with cooldown ─────────────────
+    try:
+        sector_obj, _ = Sector.objects.get_or_create(
+            name=sector_name,
+            defaults={"description": "Auto-created"}
+        )
 
-    now = datetime.now()
-    state = _last_prediction_save[sector_name]
-    time_since_last = (
-        (now - state['time']).total_seconds()
-        if state['time'] else None
-    )
+        now   = datetime.now()
+        state = _last_prediction_save[sector_name]
+        time_since_last = (
+            (now - state['time']).total_seconds()
+            if state['time'] else None
+        )
 
-    risk_changed    = state['risk'] != risk
-    cooldown_passed = time_since_last is None or time_since_last >= PREDICTION_SAVE_COOLDOWN
+        risk_changed    = state['risk'] != risk
+        cooldown_passed = (
+            time_since_last is None
+            or time_since_last >= PREDICTION_SAVE_COOLDOWN
+        )
 
-    if risk_changed or cooldown_passed:
-        for pred in predictions:
-            Prediction.objects.create(
-                sector=sector_obj,
-                prediction_type=pred["gasType"],
-                current_level=pred["currentLevel"],
-                predicted_level=pred["predictedLevel"],
-                time_to_reach=pred["timeToReach"],
-                severity=pred["severity"],
-                recommendation=pred["recommendation"],
-                model_used=model_used,
-            )
+        if risk_changed or cooldown_passed:
+            for pred in predictions:
+                Prediction.objects.create(
+                    sector=sector_obj,
+                    prediction_type=pred["gasType"],
+                    current_level=pred["currentLevel"],
+                    predicted_level=pred["predictedLevel"],
+                    time_to_reach=pred["timeToReach"],
+                    severity=pred["severity"],
+                    recommendation=pred["recommendation"],
+                    model_used=model_used,
+                )
+            _last_prediction_save[sector_name] = {'time': now, 'risk': risk}
+            reason = "risk changed" if risk_changed else "cooldown passed"
+            print(f"💾 Prediction saved ({reason}) — risk: {risk}")
 
-        _last_prediction_save[sector_name] = {
-            'time': now,
-            'risk': risk,
-        }
+    except Exception as e:
+        print(f"⚠️ Could not save prediction to DB: {e}")
 
-        reason = "risk changed" if risk_changed else "cooldown passed"
-        print(f"💾 Prediction saved ({reason}) — risk: {risk}")
-    # else: silently skip — no save needed
-
-except Exception as e:
-    print(f"⚠️ Could not save prediction to DB: {e}")
+    return JsonResponse({
+        "predictions":   predictions,
+        "riskLevel":     risk,
+        "modelUsed":     model_used,
+        "mlMeta":        ml_meta,
+        "timestamp":     datetime.now().isoformat(),
+        "system_online": True,
+    })
 
 
 @login_required
 @require_http_methods(["GET"])
 def get_historical_data(request):
-    hours = int(request.GET.get('hours', 24))
-
-    # Cap at 168 hours (7 days) — matches DB retention of 7 days
-    hours = min(hours, 168)
+    hours = min(int(request.GET.get('hours', 24)), 168)
     cutoff = timezone.now() - timedelta(hours=hours)
 
     readings = (
@@ -518,17 +485,12 @@ def get_historical_data(request):
     )
 
     history_raw = list(readings)
+    total       = len(history_raw)
 
-    # ── Downsample for large ranges so charts stay responsive ──
-    # Target: max 500 points regardless of range
-    # 6h   @ 5s interval = ~4,320 points  → downsample to 500
-    # 24h                = ~17,280 points → downsample to 500
-    # 7d                 = ~120,960 points → downsample to 500
+    # Downsample to max 500 points for chart performance
     MAX_POINTS = 500
-    total = len(history_raw)
-
     if total > MAX_POINTS:
-        step = total // MAX_POINTS
+        step        = total // MAX_POINTS
         history_raw = history_raw[::step]
 
     history = [
@@ -541,12 +503,9 @@ def get_historical_data(request):
         for r in history_raw
     ]
 
-    # Last session info
     last_reading = SensorReading.objects.order_by('-timestamp').first()
-    last_seen = last_reading.timestamp.isoformat() if last_reading else None
+    last_seen    = last_reading.timestamp.isoformat() if last_reading else None
 
-    # Summary stats for the full range (before downsampling)
-    # so stats cards are always accurate even when chart is downsampled
     from django.db.models import Max, Min, Avg
     stats = SensorReading.objects.filter(timestamp__gte=cutoff).aggregate(
         max_co=Max('carbon_monoxide'),
@@ -564,7 +523,7 @@ def get_historical_data(request):
         "hours":          hours,
         "lastSeen":       last_seen,
         "timestamp":      timezone.now().isoformat(),
-        "stats":          {
+        "stats": {
             "maxCO":   round(stats['max_co']   or 0, 2),
             "minCO":   round(stats['min_co']   or 0, 2),
             "avgCO":   round(stats['avg_co']   or 0, 2),
