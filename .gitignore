@@ -22,6 +22,9 @@ ml_models/*.joblib
 # Tailwind CLI — don't commit the exe
 tailwindcss.exe
 
+# 2. Add to .gitignore
+Add-Content .gitignore "`ntailwindcss.exe"
+
 # VS Code
 .vscode/
 
