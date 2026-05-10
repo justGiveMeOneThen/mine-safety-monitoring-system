@@ -427,10 +427,10 @@ function updateMLConfidencePanel(meta) {
     }
 
     const activeSensor = sensors.find(sensor => sensor.isActive) || sensors[0];
-    const coColor   = sensor.carbonMonoxide > 100 ? 'red' 
-                : sensor.carbonMonoxide > 35  ? 'amber' : 'green';
-const tempColor = sensor.temperature > 35 ? 'red' 
-                : sensor.temperature > 26 ? 'amber' : 'green';
+    const coColor   = activeSensor.carbonMonoxide > 100 ? 'red' 
+                    : activeSensor.carbonMonoxide > 35  ? 'amber' : 'green';
+    const tempColor = activeSensor.temperature > 35 ? 'red' 
+                    : activeSensor.temperature > 26 ? 'amber' : 'green';
 
     grid.innerHTML = `
         <div class="border-2 border-green-500 bg-green-50 rounded-lg p-6">
@@ -499,7 +499,7 @@ function updateStatsCards(sensors, systemOnline) {
         if (sensor.isActive) {
             activeCount++;
             if (sensor.carbonMonoxide > 100 || sensor.temperature > 35) criticalCount++;
-else if (sensor.carbonMonoxide > 35 || sensor.temperature > 26) warningCount++;
+            else if (sensor.carbonMonoxide > 35 || sensor.temperature > 26) warningCount++;
         } else {
             inactiveCount++;
         }

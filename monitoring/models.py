@@ -20,36 +20,34 @@ class SensorReading(models.Model):
     carbon_monoxide = models.FloatField(help_text='CO level in ppm')
     temperature = models.FloatField(help_text='Temperature in Celsius')
     timestamp = models.DateTimeField(default=timezone.now, db_index=True)
-    
-    # ESP32 specific fields (for future use)
     device_id = models.CharField(max_length=50, blank=True, null=True)
     raw_data = models.JSONField(blank=True, null=True, help_text='Raw sensor data from ESP32')
-    
+
     def __str__(self):
         return f"{self.sector.name} - {self.timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
-    
+
     class Meta:
         ordering = ['-timestamp']
         indexes = [
             models.Index(fields=['-timestamp']),
             models.Index(fields=['sector', '-timestamp']),
         ]
-    
-@property
-def co_status(self):
-    if self.carbon_monoxide > 100:
-        return 'critical'
-    elif self.carbon_monoxide > 35:
-        return 'warning'
-    return 'normal'
 
-@property
-def temp_status(self):
-    if self.temperature > 35:
-        return 'critical'
-    elif self.temperature > 26:
-        return 'warning'
-    return 'normal'
+    @property          # ← must be indented INSIDE the class
+    def co_status(self):
+        if self.carbon_monoxide > 100:
+            return 'critical'
+        elif self.carbon_monoxide > 35:
+            return 'warning'
+        return 'normal'
+
+    @property          # ← must be indented INSIDE the class
+    def temp_status(self):
+        if self.temperature > 35:
+            return 'critical'
+        elif self.temperature > 26:
+            return 'warning'
+        return 'normal'
 
 
 class Prediction(models.Model):

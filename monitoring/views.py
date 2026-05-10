@@ -12,6 +12,17 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from .models import SensorReading, Sector, Prediction, Alert
 
+
+# ── Prediction save cooldown ───────────────────────────────────
+# Prevents flooding the Prediction table — saves only when
+# risk level changes OR every 5 minutes, whichever comes first
+from collections import defaultdict
+
+_last_prediction_save = defaultdict(lambda: {
+    'time': None,
+    'risk': None,
+})
+PREDICTION_SAVE_COOLDOWN = 300  # seconds (5 minutes)
 # Import your ML predictor and alert system
 try:
     from .ml_predictor import predictor
@@ -447,12 +458,24 @@ def get_predictions(request):
         **ml_meta,
     })
 
-    # ── Save to Prediction model ───────────────────────────
-    try:
-        sector_obj, _ = Sector.objects.get_or_create(
-            name=sector_name,
-            defaults={"description": "Auto-created"}
-        )
+    # ── Save to Prediction model (with cooldown) ──────────────────
+try:
+    sector_obj, _ = Sector.objects.get_or_create(
+        name=sector_name,
+        defaults={"description": "Auto-created"}
+    )
+
+    now = datetime.now()
+    state = _last_prediction_save[sector_name]
+    time_since_last = (
+        (now - state['time']).total_seconds()
+        if state['time'] else None
+    )
+
+    risk_changed    = state['risk'] != risk
+    cooldown_passed = time_since_last is None or time_since_last >= PREDICTION_SAVE_COOLDOWN
+
+    if risk_changed or cooldown_passed:
         for pred in predictions:
             Prediction.objects.create(
                 sector=sector_obj,
@@ -464,33 +487,50 @@ def get_predictions(request):
                 recommendation=pred["recommendation"],
                 model_used=model_used,
             )
-    except Exception as e:
-        print(f"⚠️ Could not save prediction to DB: {e}")
 
-    return JsonResponse({
-        "predictions":  predictions,
-        "riskLevel":    risk,
-        "modelUsed":    model_used,
-        "mlMeta":       ml_meta,
-        "timestamp":    datetime.now().isoformat(),
-        "system_online": True,
-    })
+        _last_prediction_save[sector_name] = {
+            'time': now,
+            'risk': risk,
+        }
+
+        reason = "risk changed" if risk_changed else "cooldown passed"
+        print(f"💾 Prediction saved ({reason}) — risk: {risk}")
+    # else: silently skip — no save needed
+
+except Exception as e:
+    print(f"⚠️ Could not save prediction to DB: {e}")
 
 
 @login_required
 @require_http_methods(["GET"])
 def get_historical_data(request):
     hours = int(request.GET.get('hours', 24))
-    
+
+    # Cap at 168 hours (7 days) — matches DB retention of 7 days
+    hours = min(hours, 168)
     cutoff = timezone.now() - timedelta(hours=hours)
-    
+
     readings = (
         SensorReading.objects
         .filter(timestamp__gte=cutoff)
         .order_by('timestamp')
         .values('timestamp', 'carbon_monoxide', 'temperature', 'sector__name')
     )
-    
+
+    history_raw = list(readings)
+
+    # ── Downsample for large ranges so charts stay responsive ──
+    # Target: max 500 points regardless of range
+    # 6h   @ 5s interval = ~4,320 points  → downsample to 500
+    # 24h                = ~17,280 points → downsample to 500
+    # 7d                 = ~120,960 points → downsample to 500
+    MAX_POINTS = 500
+    total = len(history_raw)
+
+    if total > MAX_POINTS:
+        step = total // MAX_POINTS
+        history_raw = history_raw[::step]
+
     history = [
         {
             "timestamp":      r['timestamp'].isoformat(),
@@ -498,19 +538,40 @@ def get_historical_data(request):
             "temperature":    round(r['temperature'], 2),
             "sector":         r['sector__name'],
         }
-        for r in readings
+        for r in history_raw
     ]
-    
-    # Find when system was last active
+
+    # Last session info
     last_reading = SensorReading.objects.order_by('-timestamp').first()
     last_seen = last_reading.timestamp.isoformat() if last_reading else None
-    
+
+    # Summary stats for the full range (before downsampling)
+    # so stats cards are always accurate even when chart is downsampled
+    from django.db.models import Max, Min, Avg
+    stats = SensorReading.objects.filter(timestamp__gte=cutoff).aggregate(
+        max_co=Max('carbon_monoxide'),
+        min_co=Min('carbon_monoxide'),
+        avg_co=Avg('carbon_monoxide'),
+        max_temp=Max('temperature'),
+        min_temp=Min('temperature'),
+        avg_temp=Avg('temperature'),
+    )
+
     return JsonResponse({
         "historicalData": history,
         "count":          len(history),
+        "totalRaw":       total,
         "hours":          hours,
         "lastSeen":       last_seen,
         "timestamp":      timezone.now().isoformat(),
+        "stats":          {
+            "maxCO":   round(stats['max_co']   or 0, 2),
+            "minCO":   round(stats['min_co']   or 0, 2),
+            "avgCO":   round(stats['avg_co']   or 0, 2),
+            "maxTemp": round(stats['max_temp'] or 0, 2),
+            "minTemp": round(stats['min_temp'] or 0, 2),
+            "avgTemp": round(stats['avg_temp'] or 0, 2),
+        },
     })
 
 
