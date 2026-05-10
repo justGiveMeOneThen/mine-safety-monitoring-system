@@ -1,9 +1,6 @@
-# monitoring/ml_predictor.py
-# Updated to use 10 features matching the new training script
-
 import joblib
 import numpy as np
-import pandas as pd # type: ignore
+import pandas as pd
 from django.conf import settings
 from collections import deque
 import os
@@ -12,12 +9,10 @@ class RiskPredictor:
     def __init__(self):
         self.model = None
         self.load_model()
-        # Store recent readings for rolling calculations (5-minute window)
         self.temp_history = deque(maxlen=5)
         self.gas_history  = deque(maxlen=5)
 
     def load_model(self):
-        """Load the trained risk_model.joblib"""
         try:
             if os.path.exists(settings.ML_MODEL_PATH):
                 self.model = joblib.load(settings.ML_MODEL_PATH)
@@ -29,105 +24,107 @@ class RiskPredictor:
             print(f"❌ Error loading ML model: {e}")
             self.model = None
 
-    def predict_risk(self, co_level, temperature):
-        """
-        Predict risk level using the trained model.
-        Input:  CO level (ppm), Temperature (°C)
-        Output: dict with predicted risk level and future values
+    def _build_features(self, co_level, temperature):
+        """Build the 10-feature DataFrame expected by the model."""
+        self.temp_history.append(temperature)
+        self.gas_history.append(co_level)
 
-        Model expects these 10 features (exact order):
-        1.  temperature
-        2.  gas                  (CO level)
-        3.  temp_avg_5min
-        4.  gas_avg_5min
-        5.  temp_rate_of_change
-        6.  gas_rate_of_change
-        7.  temp_x_gas           (interaction term)
-        8.  gas_squared
-        9.  temp_above_35        (binary flag)
-        10. gas_above_50         (binary flag)
+        temp_avg_5min = np.mean(self.temp_history)
+        gas_avg_5min  = np.mean(self.gas_history)
+
+        if len(self.temp_history) >= 2:
+            temp_rate_of_change = temperature - self.temp_history[0]
+            gas_rate_of_change  = co_level    - self.gas_history[0]
+        else:
+            temp_rate_of_change = 0.0
+            gas_rate_of_change  = 0.0
+
+        return pd.DataFrame([[
+            temperature, co_level,
+            temp_avg_5min, gas_avg_5min,
+            temp_rate_of_change, gas_rate_of_change,
+            temperature * co_level,
+            co_level ** 2,
+            1 if temperature > 35 else 0,
+            1 if co_level > 50  else 0,
+        ]], columns=[
+            'temperature', 'gas',
+            'temp_avg_5min', 'gas_avg_5min',
+            'temp_rate_of_change', 'gas_rate_of_change',
+            'temp_x_gas', 'gas_squared',
+            'temp_above_35', 'gas_above_50',
+        ]), temp_rate_of_change, gas_rate_of_change
+
+    def _tree_confidence_interval(self, features, confidence=0.95):
         """
+        Compute confidence interval using individual tree predictions.
+        RandomForest is an ensemble — each tree votes independently.
+        We use the spread of tree probabilities as our uncertainty measure.
+        Returns (lower_bound, upper_bound) for the predicted class probability.
+        """
+        try:
+            # Collect predicted probability from every tree for the predicted class
+            tree_probs = np.array([
+                tree.predict_proba(features)[0]
+                for tree in self.model.estimators_
+            ])  # shape: (n_trees, n_classes)
+
+            # Mean probability per class across all trees
+            mean_probs = tree_probs.mean(axis=0)
+            predicted_class = np.argmax(mean_probs)
+
+            # Probabilities for the predicted class across all trees
+            class_probs = tree_probs[:, predicted_class]
+
+            alpha = 1 - confidence
+            lower = np.percentile(class_probs, alpha / 2 * 100)
+            upper = np.percentile(class_probs, (1 - alpha / 2) * 100)
+
+            return round(lower * 100, 1), round(upper * 100, 1)
+        except Exception:
+            return None, None
+
+    def predict_risk(self, co_level, temperature):
         if self.model is None:
             return self._fallback_prediction(co_level, temperature)
 
         try:
-            # Add current readings to rolling history
-            self.temp_history.append(temperature)
-            self.gas_history.append(co_level)
+            features, temp_rate, gas_rate = self._build_features(co_level, temperature)
 
-            # ── Features 3 & 4: Rolling averages ──────────────────────
-            temp_avg_5min = np.mean(self.temp_history)
-            gas_avg_5min  = np.mean(self.gas_history)
+            # ── Primary prediction ─────────────────────────────
+            prediction   = self.model.predict(features)[0]
+            probabilities = self.model.predict_proba(features)[0]
 
-            # ── Features 5 & 6: Rate of change ────────────────────────
-            if len(self.temp_history) >= 2:
-                temp_rate_of_change = temperature - self.temp_history[0]
-                gas_rate_of_change  = co_level    - self.gas_history[0]
-            else:
-                temp_rate_of_change = 0.0
-                gas_rate_of_change  = 0.0
+            # ── All 3 class probabilities ──────────────────────
+            prob_normal   = round(float(probabilities[0]) * 100, 1)
+            prob_warning  = round(float(probabilities[1]) * 100, 1)
+            prob_critical = round(float(probabilities[2]) * 100, 1)
+            confidence    = round(float(max(probabilities)) * 100, 1)
 
-            # ── Features 7–10: New engineered features ─────────────────
-            temp_x_gas   = temperature * co_level          # interaction term
-            gas_squared  = co_level ** 2                   # non-linear CO signal
-            temp_above_35 = 1 if temperature > 35 else 0  # binary danger flag
-            gas_above_50  = 1 if co_level > 50  else 0    # binary danger flag
+            # ── 95% confidence interval via tree variance ──────
+            ci_lower, ci_upper = self._tree_confidence_interval(features)
 
-            # ── Build feature DataFrame (order must match training) ─────
-            features = pd.DataFrame([[
-                temperature,            # 1
-                co_level,               # 2
-                temp_avg_5min,          # 3
-                gas_avg_5min,           # 4
-                temp_rate_of_change,    # 5
-                gas_rate_of_change,     # 6
-                temp_x_gas,             # 7
-                gas_squared,            # 8
-                temp_above_35,          # 9
-                gas_above_50,           # 10
-            ]], columns=[
-                'temperature',
-                'gas',
-                'temp_avg_5min',
-                'gas_avg_5min',
-                'temp_rate_of_change',
-                'gas_rate_of_change',
-                'temp_x_gas',
-                'gas_squared',
-                'temp_above_35',
-                'gas_above_50',
-            ])
+            # ── Projected future values ────────────────────────
+            predicted_co   = max(0, co_level    + gas_rate  * 3)
+            predicted_temp = max(0, temperature + temp_rate * 3)
 
-            # ── Predict ────────────────────────────────────────────────
-            prediction = self.model.predict(features)[0]
-
-            # Confidence from probabilities
-            try:
-                probabilities = self.model.predict_proba(features)[0]
-                confidence = max(probabilities) * 100
-            except Exception:
-                confidence = 0.0
-
-            # ── Predict future values (rate-of-change projection) ──────
-            predicted_co   = co_level    + (gas_rate_of_change  * 3)
-            predicted_temp = temperature + (temp_rate_of_change * 3)
-
-            # ── Map numeric label to risk string ───────────────────────
-            risk_level_map = {
-                0: 'normal',    # SAFE
-                1: 'warning',   # CAUTION
-                2: 'critical',  # DANGER
-            }
-            risk_level = risk_level_map.get(int(prediction), 'normal')
+            risk_map = {0: 'normal', 1: 'warning', 2: 'critical'}
+            risk_level = risk_map.get(int(prediction), 'normal')
 
             return {
-                'predicted_co':   max(0, predicted_co),
-                'predicted_temp': max(0, predicted_temp),
-                'risk_level':     risk_level,
-                'model_used':     f'ML Model (RandomForest) - {confidence:.1f}% confidence',
-                'raw_prediction': int(prediction),
-                'temp_rate':      temp_rate_of_change,
-                'gas_rate':       gas_rate_of_change,
+                'predicted_co':    round(predicted_co, 2),
+                'predicted_temp':  round(predicted_temp, 2),
+                'risk_level':      risk_level,
+                'confidence':      confidence,
+                'prob_normal':     prob_normal,
+                'prob_warning':    prob_warning,
+                'prob_critical':   prob_critical,
+                'ci_lower':        ci_lower,
+                'ci_upper':        ci_upper,
+                'model_used':      'RandomForest (200 trees)',
+                'raw_prediction':  int(prediction),
+                'temp_rate':       round(temp_rate, 3),
+                'gas_rate':        round(gas_rate, 3),
             }
 
         except Exception as e:
@@ -137,7 +134,6 @@ class RiskPredictor:
             return self._fallback_prediction(co_level, temperature)
 
     def _fallback_prediction(self, co_level, temperature):
-        """Rule-based fallback when ML model is unavailable."""
         predicted_co   = co_level    + (co_level    * 0.15)
         predicted_temp = temperature + (temperature * 0.08)
 
@@ -149,18 +145,21 @@ class RiskPredictor:
             risk_level = 'normal'
 
         return {
-            'predicted_co':   max(0, predicted_co),
-            'predicted_temp': max(0, predicted_temp),
+            'predicted_co':   round(max(0, predicted_co), 2),
+            'predicted_temp': round(max(0, predicted_temp), 2),
             'risk_level':     risk_level,
+            'confidence':     None,
+            'prob_normal':    None,
+            'prob_warning':   None,
+            'prob_critical':  None,
+            'ci_lower':       None,
+            'ci_upper':       None,
             'model_used':     'Rule-based (Fallback)',
             'raw_prediction': 2 if risk_level == 'critical' else 1 if risk_level == 'warning' else 0,
         }
 
     def reset_history(self):
-        """Reset rolling history buffers (useful for new monitoring sessions)."""
         self.temp_history.clear()
         self.gas_history.clear()
 
-
-# Singleton instance — imported by views.py and alerts.py
 predictor = RiskPredictor()

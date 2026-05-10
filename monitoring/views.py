@@ -10,7 +10,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-from .models import SensorReading, Sector
+from .models import SensorReading, Sector, Prediction, Alert
 
 # Import your ML predictor and alert system
 try:
@@ -290,128 +290,227 @@ def analytics(request):
 @login_required
 @require_http_methods(["GET"])
 def get_sensor_data(request):
-    reading = serial_manager.get_latest() or _demo_sensor()
+    reading = serial_manager.get_latest()
     
+    # Check if serial is actually connected
+    is_connected = (
+        serial_manager.serial_conn is not None
+        and serial_manager.serial_conn.is_open
+    )
+
+    if not is_connected or reading is None:
+        # System offline — all sectors inactive
+        sectors = [
+            {
+                "sector": f"Sector {i}",
+                "carbonMonoxide": 0,
+                "temperature": 0,
+                "timestamp": datetime.now().isoformat(),
+                "isActive": False,
+            }
+            for i in range(1, 7)
+        ]
+        return JsonResponse({
+            "sensors": sectors,
+            "timestamp": datetime.now().isoformat(),
+            "system_online": False,
+        })
+
+    # Hardware connected — real data
     sectors = []
     for i in range(1, 7):
         if i == 1:
             sectors.append({
-                "sector":          reading["sector"],
-                "carbonMonoxide":  reading["carbon_monoxide"],
-                "temperature":     reading["temperature"],
-                "timestamp":       reading["timestamp"],
-                "isActive":        True,
+                "sector":         reading["sector"],
+                "carbonMonoxide": reading["carbon_monoxide"],
+                "temperature":    reading["temperature"],
+                "timestamp":      reading["timestamp"],
+                "isActive":       True,
             })
         else:
             sectors.append({
-                "sector":          f"Sector {i}",
-                "carbonMonoxide":  0,
-                "temperature":     0,
-                "timestamp":       datetime.now().isoformat(),
-                "isActive":        False,
+                "sector":         f"Sector {i}",
+                "carbonMonoxide": 0,
+                "temperature":    0,
+                "timestamp":      datetime.now().isoformat(),
+                "isActive":       False,
             })
 
     return JsonResponse({
-        "sensors":   sectors,
-        "timestamp": datetime.now().isoformat(),
+        "sensors":       sectors,
+        "timestamp":     datetime.now().isoformat(),
+        "system_online": True,
     })
-
 
 @login_required
 @require_http_methods(["GET"])
 def get_predictions(request):
-    reading = serial_manager.get_latest() or _demo_sensor()
-    co      = reading["carbon_monoxide"]
-    temp    = reading["temperature"]
-    sector  = reading["sector"]
+    is_connected = (
+        serial_manager.serial_conn is not None
+        and serial_manager.serial_conn.is_open
+    )
+    reading = serial_manager.get_latest()
+
+    if not is_connected or reading is None:
+        return JsonResponse({
+            "predictions":   [],
+            "riskLevel":     "offline",
+            "modelUsed":     "N/A",
+            "timestamp":     datetime.now().isoformat(),
+            "system_online": False,
+        })
+
+    co     = reading["carbon_monoxide"]
+    temp   = reading["temperature"]
+    sector_name = reading["sector"]
 
     if ML_AVAILABLE:
         try:
-            result     = predictor.predict_risk(co, temp)
-            risk       = result.get("risk_level", "normal")
-            pred_co    = result.get("predicted_co", co * 1.15)
-            pred_temp  = result.get("predicted_temp", temp * 1.08)
-            model_used = result.get("model_used", "ML Model")
+            result = predictor.predict_risk(co, temp)
         except Exception as e:
             print(f"⚠️ Prediction error: {e}")
-            import traceback
-            traceback.print_exc()
-            risk      = "normal"
-            pred_co   = co * 1.15
-            pred_temp  = temp * 1.08
-            model_used = "Rule-based (Fallback)"
+            result = {
+                'risk_level': 'normal', 'confidence': None,
+                'prob_normal': None, 'prob_warning': None, 'prob_critical': None,
+                'ci_lower': None, 'ci_upper': None,
+                'predicted_co': co * 1.15, 'predicted_temp': temp * 1.08,
+                'model_used': 'Rule-based (Fallback)',
+            }
     else:
-        if co > 50 or temp > 35:
-            risk = "critical"
-        elif co > 30 or temp > 30:
-            risk = "warning"
-        else:
-            risk = "normal"
-        pred_co    = co * 1.15
-        pred_temp  = temp * 1.08
-        model_used = "Rule-based (Fallback)"
+        risk = 'critical' if (co > 100 or temp > 35) else 'warning' if (co > 35 or temp > 26) else 'normal'
+        result = {
+            'risk_level': risk, 'confidence': None,
+            'prob_normal': None, 'prob_warning': None, 'prob_critical': None,
+            'ci_lower': None, 'ci_upper': None,
+            'predicted_co': co * 1.15, 'predicted_temp': temp * 1.08,
+            'model_used': 'Rule-based (Fallback)',
+        }
+
+    risk       = result['risk_level']
+    pred_co    = result['predicted_co']
+    pred_temp  = result['predicted_temp']
+    model_used = result['model_used']
+    confidence = result.get('confidence')
+    ci_lower   = result.get('ci_lower')
+    ci_upper   = result.get('ci_upper')
+
+    # ── Shared ML metadata for frontend ───────────────────
+    ml_meta = {
+        "modelUsed":    model_used,
+        "confidence":   confidence,
+        "ciLower":      ci_lower,
+        "ciUpper":      ci_upper,
+        "probNormal":   result.get('prob_normal'),
+        "probWarning":  result.get('prob_warning'),
+        "probCritical": result.get('prob_critical'),
+    }
 
     predictions = []
 
-    # CO Prediction (always show if any CO detected)
-    if co >= 0:
-        co_severity = "critical" if co > 50 else "warning" if co > 30 else "normal"
-        predictions.append({
-            "sector":         sector,
-            "gasType":        "Carbon Monoxide",
-            "severity":       co_severity,
-            "currentLevel":   round(co, 2),
-            "predictedLevel": round(pred_co, 2),
-            "timeToReach":    10 if co_severity == "critical" else 20 if co_severity == "warning" else 30,
-            "recommendation": (
-                "EVACUATE IMMEDIATELY. CO levels dangerously high."
-                if co_severity == "critical"
-                else "Increase ventilation. Alert workers. Monitor closely."
-                if co_severity == "warning"
-                else "CO levels normal. Continue monitoring."
-            ),
-            "modelUsed": model_used,
-        })
-
-    # Temperature Prediction (always show)
-    temp_severity = "critical" if temp > 40 else "warning" if temp > 30 else "normal"
+    # ── CO prediction ──────────────────────────────────────
+    co_severity = 'critical' if co > 100 else 'warning' if co > 35 else 'normal'
+    co_rec = (
+        "EVACUATE IMMEDIATELY. CO levels dangerously high."
+        if co_severity == 'critical'
+        else "Increase ventilation. Alert workers. Monitor closely."
+        if co_severity == 'warning'
+        else "CO levels normal. Continue monitoring."
+    )
     predictions.append({
-        "sector":         sector,
+        "sector":         sector_name,
+        "gasType":        "Carbon Monoxide",
+        "severity":       co_severity,
+        "currentLevel":   round(co, 2),
+        "predictedLevel": round(pred_co, 2),
+        "timeToReach":    10 if co_severity == 'critical' else 20 if co_severity == 'warning' else 30,
+        "recommendation": co_rec,
+        **ml_meta,
+    })
+
+    # ── Temperature prediction ─────────────────────────────
+    temp_severity = 'critical' if temp > 35 else 'warning' if temp > 26 else 'normal'
+    temp_rec = (
+        "EVACUATE IMMEDIATELY. Temperature critically high."
+        if temp_severity == 'critical'
+        else "Check cooling systems. Reduce worker exposure."
+        if temp_severity == 'warning'
+        else "Temperature normal. Continue monitoring."
+    )
+    predictions.append({
+        "sector":         sector_name,
         "gasType":        "Temperature",
         "severity":       temp_severity,
         "currentLevel":   round(temp, 2),
         "predictedLevel": round(pred_temp, 2),
-        "timeToReach":    15 if temp_severity == "critical" else 25 if temp_severity == "warning" else 35,
-        "recommendation": (
-            "EVACUATE IMMEDIATELY. Temperature critically high."
-            if temp_severity == "critical"
-            else "Check cooling systems. Reduce worker exposure."
-            if temp_severity == "warning"
-            else "Temperature normal. Continue monitoring."
-        ),
-        "modelUsed": model_used,
+        "timeToReach":    15 if temp_severity == 'critical' else 25 if temp_severity == 'warning' else 35,
+        "recommendation": temp_rec,
+        **ml_meta,
     })
 
+    # ── Save to Prediction model ───────────────────────────
+    try:
+        sector_obj, _ = Sector.objects.get_or_create(
+            name=sector_name,
+            defaults={"description": "Auto-created"}
+        )
+        for pred in predictions:
+            Prediction.objects.create(
+                sector=sector_obj,
+                prediction_type=pred["gasType"],
+                current_level=pred["currentLevel"],
+                predicted_level=pred["predictedLevel"],
+                time_to_reach=pred["timeToReach"],
+                severity=pred["severity"],
+                recommendation=pred["recommendation"],
+                model_used=model_used,
+            )
+    except Exception as e:
+        print(f"⚠️ Could not save prediction to DB: {e}")
+
     return JsonResponse({
-        "predictions": predictions,
-        "riskLevel":   risk,
-        "modelUsed":   model_used,
-        "timestamp":   datetime.now().isoformat(),
+        "predictions":  predictions,
+        "riskLevel":    risk,
+        "modelUsed":    model_used,
+        "mlMeta":       ml_meta,
+        "timestamp":    datetime.now().isoformat(),
+        "system_online": True,
     })
 
 
 @login_required
 @require_http_methods(["GET"])
 def get_historical_data(request):
-    history = serial_manager.get_history()
-
-    if not history:
-        history = _demo_history(hours=24)
-
+    hours = int(request.GET.get('hours', 24))
+    
+    cutoff = timezone.now() - timedelta(hours=hours)
+    
+    readings = (
+        SensorReading.objects
+        .filter(timestamp__gte=cutoff)
+        .order_by('timestamp')
+        .values('timestamp', 'carbon_monoxide', 'temperature', 'sector__name')
+    )
+    
+    history = [
+        {
+            "timestamp":      r['timestamp'].isoformat(),
+            "carbonMonoxide": round(r['carbon_monoxide'], 2),
+            "temperature":    round(r['temperature'], 2),
+            "sector":         r['sector__name'],
+        }
+        for r in readings
+    ]
+    
+    # Find when system was last active
+    last_reading = SensorReading.objects.order_by('-timestamp').first()
+    last_seen = last_reading.timestamp.isoformat() if last_reading else None
+    
     return JsonResponse({
         "historicalData": history,
         "count":          len(history),
-        "timestamp":      datetime.now().isoformat(),
+        "hours":          hours,
+        "lastSeen":       last_seen,
+        "timestamp":      timezone.now().isoformat(),
     })
 
 

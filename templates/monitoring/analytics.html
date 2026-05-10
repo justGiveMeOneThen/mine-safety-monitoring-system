@@ -1,524 +1,612 @@
 {% load static %}
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Analytics - Mine Safety Monitor</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
+      rel="stylesheet"
+    />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
+  </head>
 
-<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+  <body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
     <!-- Header -->
     <header class="bg-white shadow-xl border-b-4 border-indigo-600">
-        <div class="max-w-7xl mx-auto px-6 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                    <div
-                        class="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
-                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h1 class="text-2xl font-bold text-slate-800" style="font-family: 'Pacifico', cursive;">
-                            Analytics Dashboard</h1>
-                        <p class="text-sm text-slate-500">Historical Data & Trends <span id="refreshStatus"
-                                class="text-green-600 font-medium">● Live</span></p>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <!-- Auto-refresh toggle -->
-                    <div class="flex items-center space-x-2">
-                        <label class="text-sm text-slate-600 font-medium">Auto-refresh:</label>
-                        <button id="toggleAutoRefresh" onclick="toggleAutoRefresh()"
-                            class="px-3 py-1 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition">
-                            ON
-                        </button>
-                    </div>
-                    <a href="{% url 'monitoring:dashboard' %}"
-                        class="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                        ← Back to Dashboard
-                    </a>
-                </div>
+      <div class="max-w-7xl mx-auto px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div
+              class="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center"
+            >
+              <svg
+                class="w-7 h-7 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
             </div>
+            <p class="text-sm text-slate-500">
+              Historical Data & Trends
+              <span id="refreshStatus" class="text-green-600 font-medium"
+                >● Live</span
+              >
+            </p>
+            <p class="text-xs text-slate-400 mt-1" id="lastSystemActive">
+              Loading session info...
+            </p>
+          </div>
+          <div class="flex items-center space-x-4">
+            <!-- Auto-refresh toggle -->
+            <div class="flex items-center space-x-2">
+              <label class="text-sm text-slate-600 font-medium"
+                >Auto-refresh:</label
+              >
+              <button
+                id="toggleAutoRefresh"
+                onclick="toggleAutoRefresh()"
+                class="px-3 py-1 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition"
+              >
+                ON
+              </button>
+            </div>
+            <a
+              href="{% url 'monitoring:dashboard' %}"
+              class="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+            >
+              ← Back to Dashboard
+            </a>
+          </div>
         </div>
+      </div>
     </header>
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-6 py-8">
-        <!-- Time Range Selector -->
-        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-lg font-bold text-slate-800">Time Range</h2>
-                    <p class="text-xs text-slate-500 mt-1">Last updated: <span id="lastUpdate"
-                            class="font-medium">--</span></p>
-                </div>
-                <div class="flex space-x-2">
-                    <button onclick="loadHistoricalData(6)"
-                        class="px-4 py-2 bg-slate-200 hover:bg-indigo-600 hover:text-white rounded-lg text-sm font-medium transition">6h</button>
-                    <button onclick="loadHistoricalData(12)"
-                        class="px-4 py-2 bg-slate-200 hover:bg-indigo-600 hover:text-white rounded-lg text-sm font-medium transition">12h</button>
-                    <button id="btn-24h" onclick="loadHistoricalData(24)"
-                        class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">24h</button>
-                    <button onclick="exportToCSV()"
-                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition flex items-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        Export CSV
-                    </button>
-                </div>
-            </div>
+      <!-- Time Range Selector -->
+      <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-bold text-slate-800">Time Range</h2>
+            <p class="text-xs text-slate-500 mt-1">
+              Last updated: <span id="lastUpdate" class="font-medium">--</span>
+            </p>
+          </div>
+          <div class="flex space-x-2">
+            <button
+              onclick="loadHistoricalData(6)"
+              class="px-4 py-2 bg-slate-200 hover:bg-indigo-600 hover:text-white rounded-lg text-sm font-medium transition"
+            >
+              6h
+            </button>
+            <button
+              onclick="loadHistoricalData(12)"
+              class="px-4 py-2 bg-slate-200 hover:bg-indigo-600 hover:text-white rounded-lg text-sm font-medium transition"
+            >
+              12h
+            </button>
+            <button
+              id="btn-24h"
+              onclick="loadHistoricalData(24)"
+              class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium"
+            >
+              24h
+            </button>
+            <button
+              onclick="exportToCSV()"
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition flex items-center"
+            >
+              <svg
+                class="w-4 h-4 mr-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+              Export CSV
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- CO Chart -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+          <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
+            <span class="w-2 h-8 bg-blue-600 rounded mr-3"></span>
+            Carbon Monoxide Trends
+          </h2>
+          <div class="h-64 md:h-80">
+            <canvas id="coChart"></canvas>
+          </div>
         </div>
 
-        <!-- Charts -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <!-- CO Chart -->
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
-                    <span class="w-2 h-8 bg-blue-600 rounded mr-3"></span>
-                    Carbon Monoxide Trends
-                </h2>
-                <div class="h-64 md:h-80">
-                    <canvas id="coChart"></canvas>
-                </div>
-            </div>
+        <!-- Temperature Chart -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+          <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
+            <span class="w-2 h-8 bg-amber-600 rounded mr-3"></span>
+            Temperature Trends
+          </h2>
+          <div class="h-64 md:h-80">
+            <canvas id="tempChart"></canvas>
+          </div>
+        </div>
+      </div>
 
-            <!-- Temperature Chart -->
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
-                    <span class="w-2 h-8 bg-amber-600 rounded mr-3"></span>
-                    Temperature Trends
-                </h2>
-                <div class="h-64 md:h-80">
-                    <canvas id="tempChart"></canvas>
-                </div>
+      <!-- Combined Analysis - Full Width -->
+      <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
+          <span class="w-2 h-8 bg-purple-600 rounded mr-3"></span>
+          Combined Analysis
+        </h2>
+        <div class="h-80 md:h-96">
+          <canvas id="combinedChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Statistics Cards - Now below everything -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Max CO Level -->
+        <div
+          class="bg-white rounded-lg shadow-lg p-5 border-l-4 border-blue-500 hover:shadow-xl transition-shadow duration-300"
+        >
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm text-slate-500 mb-1">Max CO Level</p>
+              <p class="text-2xl font-bold text-slate-800" id="maxCO">0</p>
+              <p class="text-xs text-slate-400" id="maxCOTime">--</p>
             </div>
+            <span class="text-blue-500 text-xl font-bold">ppm</span>
+          </div>
         </div>
 
-        <!-- Combined Analysis - Full Width -->
-        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
-                <span class="w-2 h-8 bg-purple-600 rounded mr-3"></span>
-                Combined Analysis
-            </h2>
-            <div class="h-80 md:h-96">
-                <canvas id="combinedChart"></canvas>
+        <!-- Max Temperature -->
+        <div
+          class="bg-white rounded-lg shadow-lg p-5 border-l-4 border-amber-500 hover:shadow-xl transition-shadow duration-300"
+        >
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm text-slate-500 mb-1">Max Temperature</p>
+              <p class="text-2xl font-bold text-slate-800" id="maxTemp">0</p>
+              <p class="text-xs text-slate-400" id="maxTempTime">--</p>
             </div>
+            <span class="text-amber-500 text-xl font-bold">°C</span>
+          </div>
         </div>
 
-        <!-- Statistics Cards - Now below everything -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Max CO Level -->
-            <div
-                class="bg-white rounded-lg shadow-lg p-5 border-l-4 border-blue-500 hover:shadow-xl transition-shadow duration-300">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-sm text-slate-500 mb-1">Max CO Level</p>
-                        <p class="text-2xl font-bold text-slate-800" id="maxCO">0</p>
-                        <p class="text-xs text-slate-400" id="maxCOTime">--</p>
-                    </div>
-                    <span class="text-blue-500 text-xl font-bold">ppm</span>
-                </div>
+        <!-- Avg CO Level -->
+        <div
+          class="bg-white rounded-lg shadow-lg p-5 border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-300"
+        >
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm text-slate-500 mb-1">Avg CO Level</p>
+              <p class="text-2xl font-bold text-slate-800" id="avgCOStat">0</p>
+              <p class="text-xs text-slate-400">24h avg</p>
             </div>
-
-            <!-- Max Temperature -->
-            <div
-                class="bg-white rounded-lg shadow-lg p-5 border-l-4 border-amber-500 hover:shadow-xl transition-shadow duration-300">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-sm text-slate-500 mb-1">Max Temperature</p>
-                        <p class="text-2xl font-bold text-slate-800" id="maxTemp">0</p>
-                        <p class="text-xs text-slate-400" id="maxTempTime">--</p>
-                    </div>
-                    <span class="text-amber-500 text-xl font-bold">°C</span>
-                </div>
-            </div>
-
-            <!-- Avg CO Level -->
-            <div
-                class="bg-white rounded-lg shadow-lg p-5 border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-300">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-sm text-slate-500 mb-1">Avg CO Level</p>
-                        <p class="text-2xl font-bold text-slate-800" id="avgCOStat">0</p>
-                        <p class="text-xs text-slate-400">24h avg</p>
-                    </div>
-                    <span class="text-green-500 text-xl font-bold">ppm</span>
-                </div>
-            </div>
-
-            <!-- Avg Temperature -->
-            <div
-                class="bg-white rounded-lg shadow-lg p-5 border-l-4 border-purple-500 hover:shadow-xl transition-shadow duration-300">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-sm text-slate-500 mb-1">Avg Temperature</p>
-                        <p class="text-2xl font-bold text-slate-800" id="avgTempStat">0</p>
-                        <p class="text-xs text-slate-400">24h avg</p>
-                    </div>
-                    <span class="text-purple-500 text-xl font-bold">°C</span>
-                </div>
-            </div>
+            <span class="text-green-500 text-xl font-bold">ppm</span>
+          </div>
         </div>
+
+        <!-- Avg Temperature -->
+        <div
+          class="bg-white rounded-lg shadow-lg p-5 border-l-4 border-purple-500 hover:shadow-xl transition-shadow duration-300"
+        >
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm text-slate-500 mb-1">Avg Temperature</p>
+              <p class="text-2xl font-bold text-slate-800" id="avgTempStat">
+                0
+              </p>
+              <p class="text-xs text-slate-400">24h avg</p>
+            </div>
+            <span class="text-purple-500 text-xl font-bold">°C</span>
+          </div>
+        </div>
+      </div>
     </main>
 
     <script>
-        let coChart, tempChart, combinedChart;
-        let currentFullData = [];
-        let currentHours = 24;
-        let autoRefreshEnabled = true;
-        let refreshInterval = null;
+      let coChart, tempChart, combinedChart;
+      let currentFullData = [];
+      let currentHours = 24;
+      let autoRefreshEnabled = true;
+      let refreshInterval = null;
 
-        // ============ AUTO-REFRESH FUNCTIONALITY ============
-        function startAutoRefresh() {
-            // Refresh every 5 seconds to match dashboard update rate
-            refreshInterval = setInterval(() => {
-                if (autoRefreshEnabled) {
-                    loadHistoricalData(currentHours, true); // true = silent refresh
-                }
-            }, 5000); // 5 seconds
+      // ============ AUTO-REFRESH ============
+      function startAutoRefresh() {
+        refreshInterval = setInterval(() => {
+          if (autoRefreshEnabled) {
+            loadHistoricalData(currentHours, true);
+          }
+        }, 10000); // every 10s — historical data doesn't need 5s polling
+      }
+
+      function toggleAutoRefresh() {
+        autoRefreshEnabled = !autoRefreshEnabled;
+        const btn = document.getElementById("toggleAutoRefresh");
+        const status = document.getElementById("refreshStatus");
+        if (autoRefreshEnabled) {
+          btn.textContent = "ON";
+          btn.classList.replace("bg-red-600", "bg-green-600");
+          status.textContent = "● Live";
+          status.classList.replace("text-red-600", "text-green-600");
+          loadHistoricalData(currentHours);
+        } else {
+          btn.textContent = "OFF";
+          btn.classList.replace("bg-green-600", "bg-red-600");
+          status.textContent = "○ Paused";
+          status.classList.replace("text-green-600", "text-red-600");
         }
+      }
 
-        function toggleAutoRefresh() {
-            autoRefreshEnabled = !autoRefreshEnabled;
-            const btn = document.getElementById('toggleAutoRefresh');
-            const status = document.getElementById('refreshStatus');
+      // ============ DATA LOADING ============
+      async function loadHistoricalData(hours = 24, silent = false) {
+        currentHours = hours;
+        try {
+          const response = await fetch(`/api/historical-data/?hours=${hours}`);
+          const data = await response.json();
 
-            if (autoRefreshEnabled) {
-                btn.textContent = 'ON';
-                btn.classList.remove('bg-red-600', 'hover:bg-red-700');
-                btn.classList.add('bg-green-600', 'hover:bg-green-700');
-                status.textContent = '● Live';
-                status.classList.remove('text-red-600');
-                status.classList.add('text-green-600');
-                loadHistoricalData(currentHours); // Refresh immediately
-            } else {
-                btn.textContent = 'OFF';
-                btn.classList.remove('bg-green-600', 'hover:bg-green-700');
-                btn.classList.add('bg-red-600', 'hover:bg-red-700');
-                status.textContent = '○ Paused';
-                status.classList.remove('text-green-600');
-                status.classList.add('text-red-600');
+          currentFullData = data.historicalData || [];
+
+          // Last session info
+          const lastActiveEl = document.getElementById("lastSystemActive");
+          if (data.lastSeen) {
+            const d = new Date(data.lastSeen);
+            lastActiveEl.textContent = `Last system active: ${d.toLocaleString()}`;
+          } else {
+            lastActiveEl.textContent = "No recorded sessions found";
+          }
+
+          if (currentFullData.length === 0) {
+            showNoDataState(hours);
+          } else {
+            updateCharts(currentFullData);
+            updateStatistics(currentFullData);
+          }
+
+          document.getElementById("lastUpdate").textContent =
+            new Date().toLocaleTimeString();
+
+          // Highlight active time-range button
+          if (!silent) {
+            document
+              .querySelectorAll('button[onclick^="loadHistoricalData"]')
+              .forEach((btn) => {
+                btn.classList.remove("bg-indigo-600", "text-white");
+                btn.classList.add("bg-slate-200");
+              });
+            const active = Array.from(document.querySelectorAll("button")).find(
+              (btn) =>
+                btn.getAttribute("onclick") === `loadHistoricalData(${hours})`,
+            );
+            if (active) {
+              active.classList.remove("bg-slate-200");
+              active.classList.add("bg-indigo-600", "text-white");
             }
+          }
+        } catch (err) {
+          console.error("Error loading historical data:", err);
+          document.getElementById("refreshStatus").textContent = "● Error";
+          document.getElementById("refreshStatus").className =
+            "text-red-600 font-medium";
         }
+      }
 
-        // ============ DATA LOADING ============
-        async function loadHistoricalData(hours = 24, silent = false) {
-            currentHours = hours;
-            try {
-                const response = await fetch('/api/historical-data/');
-                const data = await response.json();
+      // ============ NO DATA STATE ============
+      function showNoDataState(hours) {
+        ["coChart", "tempChart", "combinedChart"].forEach((id) => {
+          // Destroy existing chart first
+          if (id === "coChart" && coChart) {
+            coChart.destroy();
+            coChart = null;
+          }
+          if (id === "tempChart" && tempChart) {
+            tempChart.destroy();
+            tempChart = null;
+          }
+          if (id === "combinedChart" && combinedChart) {
+            combinedChart.destroy();
+            combinedChart = null;
+          }
 
-                currentFullData = data.historicalData;
-                const filteredData = currentFullData.slice(-hours);
+          const canvas = document.getElementById(id);
+          // Resize canvas to its container
+          canvas.width = canvas.parentElement.clientWidth;
+          canvas.height = canvas.parentElement.clientHeight;
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                updateCharts(filteredData);
-                updateStatistics(filteredData);
-
-                // Update last refresh time
-                const now = new Date();
-                document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
-
-                // Update active button (only if not a silent refresh)
-                if (!silent) {
-                    document.querySelectorAll('button[onclick^="loadHistoricalData"]').forEach(btn => {
-                        btn.classList.remove('bg-indigo-600', 'text-white');
-                        btn.classList.add('bg-slate-200');
-                    });
-                    const clickedBtn = Array.from(document.querySelectorAll('button'))
-                        .find(btn => btn.getAttribute('onclick') === `loadHistoricalData(${hours})`);
-                    if (clickedBtn) {
-                        clickedBtn.classList.remove('bg-slate-200');
-                        clickedBtn.classList.add('bg-indigo-600', 'text-white');
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading historical data:', error);
-                document.getElementById('refreshStatus').textContent = '● Error';
-                document.getElementById('refreshStatus').classList.add('text-red-600');
-            }
-        }
-
-        // ============ CHART UPDATES ============
-        function updateCharts(data) {
-            const labels = data.map(d => {
-                const date = new Date(d.timestamp);
-                return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-            });
-            const coData = data.map(d => d.carbonMonoxide);
-            const tempData = data.map(d => d.temperature);
-
-            // CO Chart
-            if (coChart) coChart.destroy();
-            const coCtx = document.getElementById('coChart').getContext('2d');
-            coChart = new Chart(coCtx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'CO Level (ppm)',
-                        data: coData,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 3,
-                        pointHoverRadius: 5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 500 // Smooth animation for updates
-                    },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'bottom'
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'CO (ppm)',
-                                font: { weight: 'bold' }
-                            },
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Temperature Chart
-            if (tempChart) tempChart.destroy();
-            const tempCtx = document.getElementById('tempChart').getContext('2d');
-            tempChart = new Chart(tempCtx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Temperature (°C)',
-                        data: tempData,
-                        borderColor: '#f59e0b',
-                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 3,
-                        pointHoverRadius: 5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 500
-                    },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'bottom'
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Temperature (°C)',
-                                font: { weight: 'bold' }
-                            },
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Combined Chart
-            if (combinedChart) combinedChart.destroy();
-            const combinedCtx = document.getElementById('combinedChart').getContext('2d');
-            combinedChart = new Chart(combinedCtx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'CO Level (ppm)',
-                            data: coData,
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            borderWidth: 2,
-                            yAxisID: 'y',
-                            tension: 0.4,
-                            pointRadius: 3,
-                            pointHoverRadius: 5
-                        },
-                        {
-                            label: 'Temperature (°C)',
-                            data: tempData,
-                            borderColor: '#f59e0b',
-                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                            borderWidth: 2,
-                            yAxisID: 'y1',
-                            tension: 0.4,
-                            pointRadius: 3,
-                            pointHoverRadius: 5
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 500
-                    },
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
-                    },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'bottom'
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            title: {
-                                display: true,
-                                text: 'CO (ppm)',
-                                font: { weight: 'bold' }
-                            },
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            }
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            title: {
-                                display: true,
-                                text: 'Temperature (°C)',
-                                font: { weight: 'bold' }
-                            },
-                            grid: {
-                                drawOnChartArea: false
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // ============ STATISTICS UPDATE ============
-        function updateStatistics(data) {
-            const coLevels = data.map(d => d.carbonMonoxide);
-            const tempLevels = data.map(d => d.temperature);
-
-            const maxCO = Math.max(...coLevels);
-            const maxTemp = Math.max(...tempLevels);
-            const avgCO = coLevels.reduce((a, b) => a + b, 0) / coLevels.length;
-            const avgTemp = tempLevels.reduce((a, b) => a + b, 0) / tempLevels.length;
-
-            const maxCOIndex = coLevels.indexOf(maxCO);
-            const maxTempIndex = tempLevels.indexOf(maxTemp);
-
-            document.getElementById('maxCO').textContent = maxCO.toFixed(1);
-            document.getElementById('maxTemp').textContent = maxTemp.toFixed(1);
-            document.getElementById('avgCOStat').textContent = avgCO.toFixed(1);
-            document.getElementById('avgTempStat').textContent = avgTemp.toFixed(1);
-
-            document.getElementById('maxCOTime').textContent = `at ${new Date(data[maxCOIndex].timestamp).toLocaleTimeString()}`;
-            document.getElementById('maxTempTime').textContent = `at ${new Date(data[maxTempIndex].timestamp).toLocaleTimeString()}`;
-        }
-
-        // ============ CSV EXPORT ============
-        function exportToCSV() {
-            if (!currentFullData || currentFullData.length === 0) {
-                alert("No data to export. Please load data first.");
-                return;
-            }
-
-            const filteredData = currentFullData.slice(-currentHours);
-
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Timestamp,Carbon Monoxide (ppm),Temperature (°C)\n";
-
-            filteredData.forEach(row => {
-                const date = new Date(row.timestamp);
-                const formattedTime = date.toLocaleString('en-CA', { timeZone: 'UTC' });
-                csvContent += `"${formattedTime}",${row.carbonMonoxide},${row.temperature}\n`;
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `mine_safety_logs_${new Date().toISOString().slice(0, 10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // ============ INITIALIZATION ============
-        document.addEventListener('DOMContentLoaded', () => {
-            loadHistoricalData(24); // Initial load
-            startAutoRefresh();      // Start auto-refresh timer
+          ctx.fillStyle = "#cbd5e1";
+          ctx.font = "bold 15px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(
+            `No data recorded in the last ${hours} hour${hours > 1 ? "s" : ""}`,
+            canvas.width / 2,
+            canvas.height / 2,
+          );
+          ctx.font = "13px sans-serif";
+          ctx.fillStyle = "#94a3b8";
+          ctx.fillText(
+            "Connect hardware to start recording",
+            canvas.width / 2,
+            canvas.height / 2 + 24,
+          );
         });
 
-        // Clean up interval when page is closed
-        window.addEventListener('beforeunload', () => {
-            if (refreshInterval) {
-                clearInterval(refreshInterval);
-            }
+        document.getElementById("maxCO").textContent = "--";
+        document.getElementById("maxTemp").textContent = "--";
+        document.getElementById("avgCOStat").textContent = "--";
+        document.getElementById("avgTempStat").textContent = "--";
+        document.getElementById("maxCOTime").textContent = "No data";
+        document.getElementById("maxTempTime").textContent = "No data";
+      }
+
+      // ============ CHART UPDATES ============
+      function buildLabels(data) {
+        const now = new Date();
+        const oldest = new Date(data[0].timestamp);
+        const spanMs = now - oldest;
+        const spanHours = spanMs / 3600000;
+
+        return data.map((d) => {
+          const date = new Date(d.timestamp);
+          if (spanHours > 20) {
+            // Show date + time for multi-day spans
+            return date.toLocaleString("en-GB", {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+          }
+          return date.toLocaleTimeString("en-GB", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
         });
+      }
+
+      const chartDefaults = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 300 },
+        plugins: {
+          legend: { display: true, position: "bottom" },
+          tooltip: { mode: "index", intersect: false },
+        },
+        scales: {
+          x: { grid: { display: false } },
+        },
+      };
+
+      function updateCharts(data) {
+        const labels = buildLabels(data);
+        const coData = data.map((d) => d.carbonMonoxide);
+        const tempData = data.map((d) => d.temperature);
+
+        // ── CO Chart ──────────────────────────────────────────
+        if (coChart) coChart.destroy();
+        coChart = new Chart(
+          document.getElementById("coChart").getContext("2d"),
+          {
+            type: "line",
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: "CO Level (ppm)",
+                  data: coData,
+                  borderColor: "#3b82f6",
+                  backgroundColor: "rgba(59,130,246,0.1)",
+                  borderWidth: 2,
+                  fill: true,
+                  tension: 0.4,
+                  pointRadius: data.length > 200 ? 0 : 3,
+                  pointHoverRadius: 5,
+                },
+              ],
+            },
+            options: {
+              ...chartDefaults,
+              scales: {
+                ...chartDefaults.scales,
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: "CO (ppm)",
+                    font: { weight: "bold" },
+                  },
+                  grid: { color: "rgba(0,0,0,0.05)" },
+                },
+              },
+            },
+          },
+        );
+
+        // ── Temperature Chart ─────────────────────────────────
+        if (tempChart) tempChart.destroy();
+        tempChart = new Chart(
+          document.getElementById("tempChart").getContext("2d"),
+          {
+            type: "line",
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: "Temperature (°C)",
+                  data: tempData,
+                  borderColor: "#f59e0b",
+                  backgroundColor: "rgba(245,158,11,0.1)",
+                  borderWidth: 2,
+                  fill: true,
+                  tension: 0.4,
+                  pointRadius: data.length > 200 ? 0 : 3,
+                  pointHoverRadius: 5,
+                },
+              ],
+            },
+            options: {
+              ...chartDefaults,
+              scales: {
+                ...chartDefaults.scales,
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: "Temperature (°C)",
+                    font: { weight: "bold" },
+                  },
+                  grid: { color: "rgba(0,0,0,0.05)" },
+                },
+              },
+            },
+          },
+        );
+
+        // ── Combined Chart ────────────────────────────────────
+        if (combinedChart) combinedChart.destroy();
+        combinedChart = new Chart(
+          document.getElementById("combinedChart").getContext("2d"),
+          {
+            type: "line",
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: "CO Level (ppm)",
+                  data: coData,
+                  borderColor: "#3b82f6",
+                  backgroundColor: "rgba(59,130,246,0.08)",
+                  borderWidth: 2,
+                  yAxisID: "y",
+                  tension: 0.4,
+                  pointRadius: data.length > 200 ? 0 : 3,
+                  pointHoverRadius: 5,
+                },
+                {
+                  label: "Temperature (°C)",
+                  data: tempData,
+                  borderColor: "#f59e0b",
+                  backgroundColor: "rgba(245,158,11,0.08)",
+                  borderWidth: 2,
+                  yAxisID: "y1",
+                  tension: 0.4,
+                  pointRadius: data.length > 200 ? 0 : 3,
+                  pointHoverRadius: 5,
+                },
+              ],
+            },
+            options: {
+              ...chartDefaults,
+              interaction: { mode: "index", intersect: false },
+              scales: {
+                x: { grid: { display: false } },
+                y: {
+                  type: "linear",
+                  position: "left",
+                  title: {
+                    display: true,
+                    text: "CO (ppm)",
+                    font: { weight: "bold" },
+                  },
+                  grid: { color: "rgba(0,0,0,0.05)" },
+                },
+                y1: {
+                  type: "linear",
+                  position: "right",
+                  title: {
+                    display: true,
+                    text: "Temperature (°C)",
+                    font: { weight: "bold" },
+                  },
+                  grid: { drawOnChartArea: false },
+                },
+              },
+            },
+          },
+        );
+      }
+
+      // ============ STATISTICS ============
+      function updateStatistics(data) {
+        const coLevels = data.map((d) => d.carbonMonoxide);
+        const tempLevels = data.map((d) => d.temperature);
+
+        const maxCO = Math.max(...coLevels);
+        const maxTemp = Math.max(...tempLevels);
+        const avgCO = coLevels.reduce((a, b) => a + b, 0) / coLevels.length;
+        const avgTemp =
+          tempLevels.reduce((a, b) => a + b, 0) / tempLevels.length;
+
+        const maxCOIdx = coLevels.indexOf(maxCO);
+        const maxTempIdx = tempLevels.indexOf(maxTemp);
+
+        const fmtTime = (ts) =>
+          new Date(ts).toLocaleString("en-GB", {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+
+        document.getElementById("maxCO").textContent = maxCO.toFixed(1);
+        document.getElementById("maxTemp").textContent = maxTemp.toFixed(1);
+        document.getElementById("avgCOStat").textContent = avgCO.toFixed(1);
+        document.getElementById("avgTempStat").textContent = avgTemp.toFixed(1);
+        document.getElementById("maxCOTime").textContent =
+          `at ${fmtTime(data[maxCOIdx].timestamp)}`;
+        document.getElementById("maxTempTime").textContent =
+          `at ${fmtTime(data[maxTempIdx].timestamp)}`;
+      }
+
+      // ============ CSV EXPORT ============
+      function exportToCSV() {
+        if (!currentFullData || currentFullData.length === 0) {
+          alert("No recorded data to export for this time range.");
+          return;
+        }
+        let csv = "Timestamp,Sector,Carbon Monoxide (ppm),Temperature (°C)\n";
+        currentFullData.forEach((row) => {
+          const formatted = new Date(row.timestamp).toLocaleString("en-GB");
+          csv += `"${formatted}","${row.sector || "Sector 1"}",${row.carbonMonoxide},${row.temperature}\n`;
+        });
+        const link = document.createElement("a");
+        link.href = "data:text/csv;charset=utf-8," + encodeURI(csv);
+        link.download = `mine_safety_logs_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      // ============ INIT ============
+      document.addEventListener("DOMContentLoaded", () => {
+        loadHistoricalData(24); // initial load
+        startAutoRefresh(); // start polling
+      });
+
+      window.addEventListener("beforeunload", () => {
+        if (refreshInterval) clearInterval(refreshInterval);
+      });
     </script>
-</body>
-
+  </body>
 </html>

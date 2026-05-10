@@ -59,6 +59,7 @@ WSGI_APPLICATION = 'mine_safety_project.wsgi.application'
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 ML_MODEL_PATH = BASE_DIR / 'ml_models' / 'risk_model.joblib'
 

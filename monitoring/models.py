@@ -35,23 +35,21 @@ class SensorReading(models.Model):
             models.Index(fields=['sector', '-timestamp']),
         ]
     
-    @property
-    def co_status(self):
-        #Return CO level status
-        if self.carbon_monoxide > 50:
-            return 'critical'
-        elif self.carbon_monoxide > 30:
-            return 'warning'
-        return 'normal'
-    
-    @property
-    def temp_status(self):
-        #Return temperature status
-        if self.temperature > 35:
-            return 'critical'
-        elif self.temperature > 30:
-            return 'warning'
-        return 'normal'
+@property
+def co_status(self):
+    if self.carbon_monoxide > 100:
+        return 'critical'
+    elif self.carbon_monoxide > 35:
+        return 'warning'
+    return 'normal'
+
+@property
+def temp_status(self):
+    if self.temperature > 35:
+        return 'critical'
+    elif self.temperature > 26:
+        return 'warning'
+    return 'normal'
 
 
 class Prediction(models.Model):
